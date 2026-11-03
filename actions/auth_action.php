@@ -35,8 +35,11 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("SELECT id, full_name, email, password_hash, role, identifier_number, department FROM users WHERE email = :email LIMIT 1");
-        $stmt->execute([':email' => $email]);
+        $stmt = $pdo->prepare("SELECT id, full_name, email, password_hash, role, identifier_number, department FROM users WHERE email = :email OR identifier_number = :nim LIMIT 1");
+        $stmt->execute([
+            ':email' => $email,
+            ':nim'   => $email
+        ]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {

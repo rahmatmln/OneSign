@@ -53,8 +53,119 @@ $csrfToken = generateCsrfToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workspace TTE - <?= htmlspecialchars($doc['title'], ENT_QUOTES, 'UTF-8') ?></title>
+    
+    <!-- Google Fonts & Material Symbols (Stitch Design System) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
     <!-- Tailwind CSS (via CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "outline-variant": "#c5c5d3",
+                        "on-primary-container": "#90a8ff",
+                        "primary-fixed": "#dce1ff",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-container": "#dae2fd",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "primary": "#00236f",
+                        "on-tertiary-container": "#56b3f9",
+                        "on-surface-variant": "#444651",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "surface-container": "#e5eeff",
+                        "surface-tint": "#4059aa",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#00164e",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary-fixed": "#cce5ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#b6c4ff",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#213145",
+                        "outline": "#757682",
+                        "surface-dim": "#cbdbf5",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "tertiary-container": "#004469",
+                        "surface-container-high": "#dce9ff",
+                        "surface-variant": "#d3e4fe",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-secondary-container": "#5c647a",
+                        "on-surface": "#0b1c30",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#001d31",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#93ccff",
+                        "primary-container": "#1e3a8a",
+                        "secondary-fixed": "#dae2fd",
+                        "on-background": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#004b73",
+                        "tertiary": "#002d48",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#264191",
+                        "secondary": "#565e74",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed": "#131b2e"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "gutter": "1.5rem",
+                        "margin": "2rem",
+                        "space-xs": "0.25rem",
+                        "space-sm": "0.5rem",
+                        "space-md": "1rem",
+                        "space-lg": "1.5rem",
+                        "margin-mobile": "1rem",
+                        "gutter-sm": "1rem",
+                        "space-xl": "2rem"
+                    },
+                    fontFamily: {
+                        "sans": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "code-audit-sm": ["JetBrains Mono"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "code-audit": ["JetBrains Mono"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "code-audit-sm": ["10px", {"lineHeight": "14px", "fontWeight": "400"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "code-audit": ["12px", {"lineHeight": "16px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+                        "headline-sm": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        };
+    </script>
+
     <!-- Mozilla PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
@@ -68,51 +179,72 @@ $csrfToken = generateCsrfToken();
         }
         #pdf-canvas-container {
             position: relative;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px -5px rgba(0, 35, 111, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             background-color: #ffffff;
             margin: 0 auto;
         }
     </style>
 </head>
-<body class="bg-slate-200 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+<body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary selection:text-on-primary min-h-screen flex flex-col justify-between">
 
-    <!-- Header Workspace -->
-    <header class="bg-blue-900 border-b border-blue-950 text-white sticky top-0 z-40 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+    <!-- Header Workspace (Institutional Modernism) -->
+    <header class="bg-surface-container-lowest border-b border-outline-variant/30 sticky top-0 z-40 shadow-sm backdrop-blur-md">
+        <div class="w-full px-space-lg flex items-center justify-between h-16">
             
-            <div class="flex items-center space-x-3">
-                <a href="<?= BASE_URL ?>/views/penandatangan/dashboard.php" class="px-2.5 py-1 text-xs font-semibold bg-blue-950 border border-blue-800 rounded hover:bg-blue-800 transition">
-                    &larr; Kembali
+            <!-- Left: Back Button & Document Identity -->
+            <div class="flex items-center gap-space-md">
+                <a href="<?= BASE_URL ?>/views/penandatangan/dashboard.php" 
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-label-md font-label-md text-on-surface-variant hover:text-on-surface bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors"
+                   title="Kembali ke Antrean">
+                    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    <span class="hidden sm:inline">Kembali</span>
                 </a>
-                <span class="w-px h-5 bg-blue-800"></span>
-                <div>
-                    <span class="font-bold text-sm tracking-tight text-white truncate max-w-xs sm:max-w-md block">
-                        <?= htmlspecialchars($doc['title'], ENT_QUOTES, 'UTF-8') ?>
-                    </span>
-                    <span class="text-[11px] text-blue-200">
-                        Pemohon: <?= htmlspecialchars($doc['requester_name'], ENT_QUOTES, 'UTF-8') ?> (NIM: <?= htmlspecialchars($doc['requester_nim'] ?? '-', ENT_QUOTES, 'UTF-8') ?>)
+                
+                <div class="h-6 w-px bg-outline-variant/30 hidden sm:block"></div>
+                
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span class="font-headline-sm text-headline-sm font-bold text-on-surface truncate max-w-xs sm:max-w-md lg:max-w-lg">
+                            <?= htmlspecialchars($doc['title'], ENT_QUOTES, 'UTF-8') ?>
+                        </span>
+                        <?php if ($doc['sign_status'] === 'menunggu'): ?>
+                            <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                Menunggu Pengesahan
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <span class="font-body-sm text-body-sm text-secondary truncate">
+                        Pemohon: <strong class="text-on-surface font-semibold"><?= htmlspecialchars($doc['requester_name'], ENT_QUOTES, 'UTF-8') ?></strong> 
+                        (NIM: <span class="font-code-audit-sm"><?= htmlspecialchars($doc['requester_nim'] ?? '-', ENT_QUOTES, 'UTF-8') ?></span>) • <?= htmlspecialchars($doc['category'], ENT_QUOTES, 'UTF-8') ?>
                     </span>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex items-center space-x-2">
+            <!-- Right: Action Buttons -->
+            <div class="flex items-center gap-space-sm">
                 <?php if ($doc['sign_status'] === 'menunggu'): ?>
                     <button type="button" onclick="openRejectModal()" 
-                            class="px-3 py-1.5 text-xs font-semibold text-rose-200 bg-rose-950/80 border border-rose-800 rounded hover:bg-rose-900 hover:text-white transition">
-                        Tolak Berkas
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-label-md font-label-md font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">rule</span>
+                        <span class="hidden sm:inline">Tolak Berkas</span>
                     </button>
+                    
                     <button type="button" onclick="openSignatureModal()" 
-                            class="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded hover:bg-blue-500 shadow transition">
-                        Gores Tanda Tangan
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-label-md font-label-md font-semibold text-on-primary bg-primary hover:bg-primary-container rounded-lg shadow-sm transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">edit_draw</span>
+                        <span>Gores TTD</span>
                     </button>
+                    
                     <button type="button" id="btn-submit-sign" onclick="submitApproval()" disabled
-                            class="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 rounded opacity-50 cursor-not-allowed shadow transition">
-                        Sahkan Dokumen
+                            class="inline-flex items-center gap-1.5 px-4 py-2 text-label-md font-label-md font-bold text-white bg-emerald-700 rounded-lg opacity-50 cursor-not-allowed shadow-sm transition-all">
+                        <span class="material-symbols-outlined text-[18px]">verified</span>
+                        <span>Sahkan Dokumen</span>
                     </button>
                 <?php else: ?>
-                    <span class="px-3 py-1 rounded bg-slate-800 text-xs text-slate-300 font-semibold border border-slate-700">
-                        Status: <?= ucfirst($doc['sign_status']) ?>
+                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-container text-label-md font-label-md font-semibold text-on-surface border border-outline-variant/30">
+                        <span class="material-symbols-outlined text-[18px] text-emerald-700">task_alt</span>
+                        <span>Status: <?= ucfirst($doc['sign_status']) ?></span>
                     </span>
                 <?php endif; ?>
             </div>
@@ -120,73 +252,90 @@ $csrfToken = generateCsrfToken();
         </div>
     </header>
 
-    <!-- Main Workspace Layout -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 w-full flex-1">
+    <!-- Main Workspace Area -->
+    <main class="w-full px-space-md sm:px-space-lg py-space-md flex-1 flex flex-col">
         
-        <!-- Toolbar Kontrol PDF & Indikator Koordinat -->
-        <div class="bg-white border border-slate-300 rounded-xl p-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm text-xs">
+        <!-- Toolbar Kontrol PDF & Indikator Koordinat (Stitch Style) -->
+        <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-sm mb-space-md flex flex-wrap items-center justify-between gap-3 shadow-sm">
             
-            <!-- PDF Page Navigation -->
-            <div class="flex items-center space-x-2">
-                <button type="button" id="btn-prev-page" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded font-semibold text-slate-700">
-                    &larr; Halaman Sebelumnya
-                </button>
-                <span class="font-mono font-medium text-slate-700 px-2">
-                    Halaman <span id="current-page-num" class="font-bold text-blue-900">1</span> dari <span id="total-pages-num" class="font-bold">1</span>
-                </span>
-                <button type="button" id="btn-next-page" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded font-semibold text-slate-700">
-                    Halaman Selanjutnya &rarr;
-                </button>
+            <!-- Page Navigation -->
+            <div class="flex items-center gap-space-xs">
+                <div class="flex items-center bg-surface-container-low rounded-lg p-0.5 border border-outline-variant/20">
+                    <button type="button" id="btn-prev-page" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="Halaman Sebelumnya">
+                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                    </button>
+                    <div class="px-3 font-body-sm text-body-sm text-on-surface flex items-center gap-1.5">
+                        <span class="text-secondary">Halaman</span>
+                        <span id="current-page-num" class="font-bold text-primary font-code-audit">1</span>
+                        <span class="text-secondary">dari</span>
+                        <span id="total-pages-num" class="font-bold font-code-audit">1</span>
+                    </div>
+                    <button type="button" id="btn-next-page" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="Halaman Berikutnya">
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Coordinate Readout Panel -->
-            <div class="flex items-center space-x-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-[11px]">
-                <div>
-                    <span class="text-slate-500">X:</span>
-                    <span id="coord-x-val" class="font-bold text-blue-800">0</span> pt
+            <div class="flex items-center gap-space-md bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/20 font-code-audit text-code-audit text-secondary">
+                <div class="flex items-center gap-1">
+                    <span class="text-secondary font-medium">X:</span>
+                    <span id="coord-x-val" class="font-bold text-primary">0</span> <span class="text-[10px]">pt</span>
                 </div>
-                <div>
-                    <span class="text-slate-500">Y:</span>
-                    <span id="coord-y-val" class="font-bold text-blue-800">0</span> pt
+                <div class="flex items-center gap-1">
+                    <span class="text-secondary font-medium">Y:</span>
+                    <span id="coord-y-val" class="font-bold text-primary">0</span> <span class="text-[10px]">pt</span>
                 </div>
-                <div>
-                    <span class="text-slate-500">Hal:</span>
-                    <span id="target-page-val" class="font-bold text-slate-900">1</span>
+                <div class="flex items-center gap-1 border-l border-outline-variant/30 pl-2">
+                    <span class="text-secondary font-medium">Hal:</span>
+                    <span id="target-page-val" class="font-bold text-on-surface">1</span>
                 </div>
             </div>
 
-            <!-- Kontrol Perbesar / Perkecil Ukuran Kotak TTD (Rasio Tetap) -->
-            <div class="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
-                <span class="text-slate-600 font-medium">Ukuran TTD:</span>
-                <button type="button" id="btn-shrink-sig" class="w-6 h-6 rounded bg-white hover:bg-slate-200 border border-slate-300 font-bold text-slate-700 flex items-center justify-center transition" title="Perkecil ukuran tanda tangan">-</button>
-                <span id="sig-scale-label" class="font-mono font-bold text-blue-900 min-w-[40px] text-center text-[11px]">100%</span>
-                <button type="button" id="btn-grow-sig" class="w-6 h-6 rounded bg-white hover:bg-slate-200 border border-slate-300 font-bold text-slate-700 flex items-center justify-center transition" title="Perbesar ukuran tanda tangan">+</button>
-                <button type="button" id="btn-reset-sig" class="px-2 py-0.5 text-[10px] rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold transition" title="Kembalikan ke ukuran standar">Reset</button>
+            <!-- Kontrol Skala Ukuran Kotak TTD (Rasio Tetap) -->
+            <div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1.5 rounded-lg border border-outline-variant/20">
+                <span class="text-secondary font-label-sm text-label-sm font-semibold">Skala TTD:</span>
+                <button type="button" id="btn-shrink-sig" class="w-7 h-7 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/30 text-on-surface flex items-center justify-center transition-colors" title="Perkecil tanda tangan">
+                    <span class="material-symbols-outlined text-[16px]">remove</span>
+                </button>
+                <span id="sig-scale-label" class="font-code-audit text-code-audit font-bold text-primary min-w-[45px] text-center">100%</span>
+                <button type="button" id="btn-grow-sig" class="w-7 h-7 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/30 text-on-surface flex items-center justify-center transition-colors" title="Perbesar tanda tangan">
+                    <span class="material-symbols-outlined text-[16px]">add</span>
+                </button>
+                <button type="button" id="btn-reset-sig" class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold transition-colors" title="Kembalikan ukuran normal">
+                    Reset
+                </button>
             </div>
 
-            <div class="text-[11px] text-slate-500 italic hidden xl:block">
-                Petunjuk: Geser kotak atau tarik lingkaran di sudut kanan bawah untuk memperbesar kotak TTD.
+            <div class="hidden xl:flex items-center gap-1.5 text-secondary font-body-sm text-body-sm">
+                <span class="material-symbols-outlined text-[16px] text-primary">touch_app</span>
+                <span>Geser kotak atau tarik pojok kanan bawah untuk menyesuaikan tanda tangan.</span>
             </div>
 
         </div>
 
         <!-- Area Kanvas PDF & Overlay Kotak TTD -->
-        <div class="flex justify-center overflow-x-auto py-2">
+        <div class="flex-1 flex justify-center overflow-x-auto py-2 bg-surface-container-low/50 rounded-xl p-4 border border-outline-variant/10">
             
-            <div id="pdf-canvas-container">
+            <div id="pdf-canvas-container" class="rounded-lg overflow-hidden relative">
                 <!-- Kanvas Render Halaman PDF oleh PDF.js -->
                 <canvas id="pdf-render-canvas" class="block"></canvas>
 
-                <!-- Kotak Geser Tanda Tangan (Draggable & Resizable Box) -->
+                <!-- Kotak Geser Tanda Tangan (Draggable & Resizable Box - Stitch Institutional Style) -->
                 <?php if ($doc['sign_status'] === 'menunggu'): ?>
                     <div id="draggable-sig-box" 
-                         class="draggable-signature-box absolute border-2 border-dashed border-blue-600 bg-blue-50/85 rounded-lg p-2 flex flex-col justify-between text-center shadow-md select-none"
+                         class="draggable-signature-box absolute border-2 border-dashed border-primary bg-surface-container-lowest/90 backdrop-blur-xs rounded-xl p-2.5 flex flex-col justify-between text-center shadow-lg select-none"
                          style="width: 230px; height: 108px; left: 100px; top: 100px; z-index: 30;">
                         
                         <!-- State 1: Placeholder Sebelum Gores TTD -->
-                        <div id="sig-box-placeholder" class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none">
-                            <span id="sig-ph-title" class="font-bold text-blue-900 block tracking-tight transition-all" style="font-size: 11px;">KOTAK PENEMPATAN TTD</span>
-                            <span id="sig-ph-sub" class="text-blue-700 block mt-0.5 transition-all" style="font-size: 9px;">Geser & perbesar kotak sesuai kebutuhan</span>
+                        <div id="sig-box-placeholder" class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none text-center">
+                            <span class="material-symbols-outlined text-primary text-[22px] mb-0.5">draw</span>
+                            <span id="sig-ph-title" class="font-headline-sm text-headline-sm font-bold text-primary block tracking-tight leading-tight transition-all" style="font-size: 11px;">
+                                AREA TANDA TANGAN
+                            </span>
+                            <span id="sig-ph-sub" class="font-body-sm text-body-sm text-secondary block mt-0.5 transition-all" style="font-size: 9px;">
+                                Geser posisi & atur ukuran tanda tangan
+                            </span>
                         </div>
 
                         <!-- State 2: Preview Setelah TTD Diterapkan -->
@@ -194,23 +343,21 @@ $csrfToken = generateCsrfToken();
                             <div class="flex-1 w-full flex items-center justify-center overflow-hidden min-h-0 py-0.5">
                                 <img id="sig-preview-img" src="" alt="Citra TTD" class="max-h-full max-w-full object-contain filter drop-shadow">
                             </div>
-                            <div class="w-full border-t border-blue-300/80 pt-0.5 mt-0.5 shrink-0">
-                                <span id="sig-signer-name" class="font-bold text-blue-950 block truncate leading-tight transition-all" style="font-size: 10px;">
+                            <div class="w-full border-t border-outline-variant/30 pt-1 mt-0.5 shrink-0 bg-surface-container-low/50 rounded-b">
+                                <span id="sig-signer-name" class="font-bold text-primary block truncate leading-tight font-label-md transition-all" style="font-size: 10px;">
                                     <?= htmlspecialchars($user['full_name'], ENT_QUOTES, 'UTF-8') ?>
                                 </span>
-                                <span id="sig-signer-nip" class="text-slate-600 font-mono block truncate leading-tight transition-all mt-0.5" style="font-size: 8px;">
-                                    NIP. <?= htmlspecialchars($user['identifier_number'] ?? '-', ENT_QUOTES, 'UTF-8') ?> | TTE Sah
+                                <span id="sig-signer-nip" class="text-secondary font-code-audit-sm block truncate leading-tight transition-all mt-0.5" style="font-size: 8px;">
+                                    NIP. <?= htmlspecialchars($user['identifier_number'] ?? '-', ENT_QUOTES, 'UTF-8') ?> • Sah BSrE PNJ
                                 </span>
                             </div>
                         </div>
 
                         <!-- Handle Tarik Perbesar / Perkecil Sudut Kanan Bawah (Resizer Handle) -->
                         <div id="sig-box-resizer" 
-                             class="absolute -right-2 -bottom-2 w-5 h-5 bg-blue-700 hover:bg-blue-800 text-white rounded-full border-2 border-white shadow-md cursor-nwse-resize flex items-center justify-center transition select-none z-40"
+                             class="absolute -right-2.5 -bottom-2.5 w-6 h-6 bg-primary hover:bg-primary-container text-on-primary rounded-full border-2 border-surface-container-lowest shadow-md cursor-nwse-resize flex items-center justify-center transition-all select-none z-40"
                              title="Tarik untuk memperbesar / memperkecil tanda tangan (rasio tetap)">
-                            <svg class="w-2.5 h-2.5 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 19L5 5m14 0v14H5"/>
-                            </svg>
+                            <span class="material-symbols-outlined text-[13px] pointer-events-none">drag_pan</span>
                         </div>
 
                     </div>
@@ -234,49 +381,59 @@ $csrfToken = generateCsrfToken();
         <input type="hidden" name="signature_data" id="form-signature-data" value="">
     </form>
 
-    <!-- Modal Kanvas Gores Tanda Tangan -->
-    <div id="modal-canvas" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-md w-full border border-slate-300 shadow-2xl p-6 space-y-4">
+    <!-- Modal Kanvas Gores Tanda Tangan (Stitch Dialog Style) -->
+    <div id="modal-canvas" class="fixed inset-0 z-50 bg-on-surface/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant/30 shadow-2xl p-6 space-y-4">
             
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Goreskan Tanda Tangan Elektronik</h3>
-                    <p class="text-[11px] text-slate-500">Bubuhkan goresan tanda tangan Anda menggunakan mouse atau layar sentuh.</p>
+            <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[22px]">draw</span>
+                    <div>
+                        <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface">Goreskan Tanda Tangan</h3>
+                        <p class="font-body-sm text-body-sm text-secondary">Bubuhkan goresan tanda tangan digital Anda menggunakan mouse atau layar sentuh.</p>
+                    </div>
                 </div>
-                <button type="button" onclick="closeSignatureModal()" class="text-slate-400 hover:text-slate-600 text-sm font-semibold">Tutup</button>
+                <button type="button" onclick="closeSignatureModal()" class="text-secondary hover:text-on-surface p-1 rounded-lg hover:bg-surface-container transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
             </div>
 
             <!-- Kanvas Gambar TTD -->
-            <div class="border-2 border-slate-200 rounded-lg overflow-hidden bg-slate-50">
-                <canvas id="signing-pad" width="380" height="180" class="w-full bg-white cursor-crosshair"></canvas>
+            <div class="border-2 border-outline-variant/30 rounded-xl overflow-hidden bg-surface-container-lowest shadow-inner">
+                <canvas id="signing-pad" width="380" height="180" class="w-full bg-surface-container-lowest cursor-crosshair"></canvas>
             </div>
 
             <div class="flex items-center justify-between text-xs">
-                <button type="button" onclick="clearSignaturePad()" class="font-semibold text-rose-700 hover:text-rose-900 transition">
-                    Bersihkan Kanvas
+                <button type="button" onclick="clearSignaturePad()" class="font-label-md text-label-md font-semibold text-rose-700 hover:text-rose-900 transition flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                    <span>Bersihkan Kanvas</span>
                 </button>
-                <span class="text-[11px] text-slate-400">Warna tinta: Biru Institusi</span>
+                <span class="font-code-audit-sm text-code-audit-sm text-secondary">Tinta: Biru Institusi (#1e3a8a)</span>
             </div>
 
-            <div class="pt-3 border-t border-slate-200 flex items-center justify-end space-x-2">
-                <button type="button" onclick="closeSignatureModal()" class="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-300 transition">
+            <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeSignatureModal()" class="px-4 py-2 text-label-md font-label-md font-semibold text-secondary hover:text-on-surface bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors">
                     Batal
                 </button>
-                <button type="button" onclick="applySignatureToBox()" class="px-4 py-2 text-xs font-bold text-white bg-blue-800 hover:bg-blue-900 rounded shadow transition">
-                    Terapkan ke Kotak TTD
+                <button type="button" onclick="applySignatureToBox()" class="px-4 py-2 text-label-md font-label-md font-bold text-on-primary bg-primary hover:bg-primary-container rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px]">check</span>
+                    <span>Terapkan ke Dokumen</span>
                 </button>
             </div>
 
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Penolakan Dokumen -->
-    <div id="modal-reject" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-md w-full border border-slate-300 shadow-2xl p-6 space-y-4">
+    <!-- Modal Konfirmasi Penolakan Dokumen (Stitch Dialog Style) -->
+    <div id="modal-reject" class="fixed inset-0 z-50 bg-on-surface/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl max-w-md w-full border border-outline-variant/30 shadow-2xl p-6 space-y-4">
             
-            <div class="border-b border-slate-200 pb-3">
-                <h3 class="text-sm font-bold text-rose-900">Konfirmasi Penolakan Dokumen</h3>
-                <p class="text-[11px] text-slate-500">Berikan catatan alasan penolakan agar pemohon dapat melakukan perbaikan.</p>
+            <div class="border-b border-outline-variant/20 pb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-rose-700 text-[22px]">rule</span>
+                <div>
+                    <h3 class="font-headline-sm text-headline-sm font-bold text-rose-900">Konfirmasi Penolakan Dokumen</h3>
+                    <p class="font-body-sm text-body-sm text-secondary">Berikan catatan alasan penolakan agar pemohon dapat melakukan perbaikan.</p>
+                </div>
             </div>
 
             <form action="<?= BASE_URL ?>/actions/sign_action.php?action=reject" method="POST" class="space-y-4">
@@ -284,20 +441,21 @@ $csrfToken = generateCsrfToken();
                 <input type="hidden" name="doc_id" value="<?= $doc['id'] ?>">
 
                 <div>
-                    <label for="rejection_note" class="block text-xs font-bold text-slate-700 mb-1">
-                        Alasan Penolakan <span class="text-rose-500">*</span>
+                    <label for="rejection_note" class="block font-label-md text-label-md text-on-surface font-semibold mb-1.5">
+                        Alasan Penolakan <span class="text-rose-600">*</span>
                     </label>
                     <textarea id="rejection_note" name="rejection_note" required rows="4"
                               placeholder="Tuliskan poin perbaikan atau alasan naskah ditolak..."
-                              class="w-full px-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-rose-600 focus:border-rose-600 bg-slate-50 focus:bg-white transition"></textarea>
+                              class="w-full px-3.5 py-2.5 font-body-md text-body-md border border-outline-variant/30 rounded-xl bg-surface-container-low text-on-surface focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-rose-600 transition"></textarea>
                 </div>
 
-                <div class="pt-2 flex items-center justify-end space-x-2">
-                    <button type="button" onclick="closeRejectModal()" class="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-300 transition">
+                <div class="pt-2 flex items-center justify-end gap-2 border-t border-outline-variant/20">
+                    <button type="button" onclick="closeRejectModal()" class="px-4 py-2 text-label-md font-label-md font-semibold text-secondary hover:text-on-surface bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors">
                         Batal
                     </button>
-                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-rose-700 hover:bg-rose-800 rounded shadow transition">
-                        Kirim Penolakan
+                    <button type="submit" class="px-4 py-2 text-label-md font-label-md font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">send</span>
+                        <span>Kirim Penolakan</span>
                     </button>
                 </div>
             </form>
@@ -631,7 +789,7 @@ $csrfToken = generateCsrfToken();
         let isDrawing = false;
         let signatureDrawn = false;
 
-        padCtx.strokeStyle = '#1e3a8a'; // Tinta biru tua resmi
+        padCtx.strokeStyle = '#1e3a8a'; // Tinta biru tua resmi institusi
         padCtx.lineWidth = 2.5;
         padCtx.lineCap = 'round';
         padCtx.lineJoin = 'round';
