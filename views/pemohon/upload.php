@@ -15,15 +15,33 @@ requireRole(['pemohon']);
 $user = getActiveUser();
 $pdo  = Database::getConnection();
 
-// Mengambil daftar dosen penandatangan sah yang terdaftar di basis data
+// Mengambil daftar dosen penandatangan aktif yang terdaftar di basis data
 $stmt = $pdo->prepare("
     SELECT id, full_name, identifier_number, department 
     FROM users 
-    WHERE role = 'penandatangan' 
+    WHERE role = 'penandatangan' AND is_active = 1
     ORDER BY full_name ASC
 ");
 $stmt->execute();
 $signers = $stmt->fetchAll();
+
+// Mengambil kategori dokumen aktif dari master data
+$stmtCat = $pdo->query("
+    SELECT name, code, default_classification 
+    FROM document_categories 
+    WHERE is_active = 1 
+    ORDER BY name ASC
+");
+$categories = $stmtCat->fetchAll();
+
+// Mengambil klasifikasi dokumen aktif dari master data
+$stmtClass = $pdo->query("
+    SELECT code, name, badge_label, tier_code 
+    FROM document_classifications 
+    WHERE is_active = 1 
+    ORDER BY tier_level ASC
+");
+$classifications = $stmtClass->fetchAll();
 
 $errorMessage = $_SESSION['upload_error'] ?? null;
 unset($_SESSION['upload_error']);
@@ -40,7 +58,7 @@ require_once __DIR__ . '/../layouts/header.php';
             Pengajuan Dokumen
         </h1>
         <p class="font-body-md text-body-md text-secondary">
-            Unggah berkas naskah PDF dan tentukan pejabat penandatangan pengesahan.
+            Unggah berkas naskah PDF dan tentukan penandatangan pengesahan.
         </p>
     </div>
 </div>
@@ -179,12 +197,15 @@ require_once __DIR__ . '/../layouts/header.php';
                                         name="category" 
                                         required 
                                         class="w-full h-10 px-space-md bg-surface-container-lowest rounded-lg border border-outline-variant/30 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
-                                    <option value="Tugas Akhir / Skripsi" selected>Tugas Akhir / Skripsi</option>
-                                    <option value="Surat Rekomendasi / Magang">Surat Rekomendasi / Magang</option>
-                                    <option value="Lembar Pengesahan Laporan">Lembar Pengesahan Laporan</option>
-                                    <option value="Nota Dinas Dekanat">Nota Dinas Dekanat</option>
-                                    <option value="Berita Acara Sidang">Berita Acara Sidang</option>
-                                    <option value="Administrasi Akademik Lainnya">Administrasi Akademik Lainnya</option>
+                                    <?php if (empty($categories)): ?>
+                                        <option value="Administrasi Akademik">Administrasi Akademik</option>
+                                    <?php else: ?>
+                                        <?php foreach ($categories as $index => $cat): ?>
+                                            <option value="<?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>" <?= $index === 0 ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($cat['name'], ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </select>
                                 <span class="material-symbols-outlined text-secondary absolute right-3 top-2.5 pointer-events-none text-[20px]">expand_more</span>
                             </div>
@@ -200,9 +221,17 @@ require_once __DIR__ . '/../layouts/header.php';
                                         name="confidentiality" 
                                         required 
                                         class="w-full h-10 px-space-md bg-surface-container-lowest rounded-lg border border-outline-variant/30 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer">
-                                    <option value="internal" selected>Internal Kampus (Civitas TIK)</option>
-                                    <option value="publik">Publik Terbuka</option>
-                                    <option value="rahasia">Rahasia TIK</option>
+                                    <?php if (empty($classifications)): ?>
+                                        <option value="internal" selected>Internal Kampus (Civitas TIK)</option>
+                                        <option value="publik">Publik Terbuka</option>
+                                        <option value="rahasia">Rahasia Terbatas</option>
+                                    <?php else: ?>
+                                        <?php foreach ($classifications as $cls): ?>
+                                            <option value="<?= htmlspecialchars($cls['code'], ENT_QUOTES, 'UTF-8') ?>" <?= $cls['code'] === 'internal' ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($cls['name'], ENT_QUOTES, 'UTF-8') ?> (<?= htmlspecialchars($cls['badge_label'], ENT_QUOTES, 'UTF-8') ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </select>
                                 <span class="material-symbols-outlined text-secondary absolute right-3 top-2.5 pointer-events-none text-[20px]">expand_more</span>
                             </div>

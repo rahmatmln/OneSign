@@ -35,7 +35,7 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("SELECT id, full_name, email, password_hash, role, identifier_number, department FROM users WHERE email = :email OR identifier_number = :nim LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, full_name, email, password_hash, role, identifier_number, department, is_active FROM users WHERE email = :email OR identifier_number = :nim LIMIT 1");
         $stmt->execute([
             ':email' => $email,
             ':nim'   => $email
@@ -43,6 +43,13 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {
+            // Periksa Status Keaktifan Akun (Soft Delete)
+            if (isset($user['is_active']) && (int)$user['is_active'] === 0) {
+                $_SESSION['login_error'] = 'Akun Anda sedang dinonaktifkan oleh Administrator. Hubungi Unit TIK untuk bantuan.';
+                header('Location: ' . BASE_URL . '/views/auth/login.php');
+                exit;
+            }
+
             // Regenerasi ID sesi untuk mencegah Session Fixation Attack
             session_regenerate_id(true);
 
