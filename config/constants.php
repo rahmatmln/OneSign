@@ -7,8 +7,8 @@
 // URL Dasar Aplikasi di Localhost
 define('BASE_URL', 'http://localhost/onesign');
 
-// Batasan Pengunggahan Berkas PDF (10 MB dalam bytes)
-define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024);
+// Batasan Pengunggahan Berkas PDF (2 MB dalam bytes)
+define('MAX_UPLOAD_SIZE', 2 * 1024 * 1024);
 
 // Direktori Penyimpanan Berkas
 define('DIR_UPLOADS_ORIGINAL', __DIR__ . '/../uploads/originals/');

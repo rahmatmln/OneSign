@@ -90,7 +90,7 @@ require_once __DIR__ . '/../layouts/header.php';
                         <span class="material-symbols-outlined text-primary text-[20px]">upload_file</span>
                         <span>Berkas Dokumen</span>
                     </div>
-                    <span class="font-code-audit-sm text-code-audit-sm text-secondary font-semibold">Maks. 10 MB</span>
+                    <span class="font-code-audit-sm text-code-audit-sm text-secondary font-semibold">Maks. 2 MB</span>
                 </div>
 
                 <!-- Drag & Drop Zone -->
@@ -366,9 +366,9 @@ require_once __DIR__ . '/../layouts/header.php';
                 return;
             }
 
-            // Validasi ukuran maksimal 10 MB
+            // Validasi ukuran maksimal 2 MB
             if (file.size > 10 * 1024 * 1024) {
-                alert('Peringatan: Ukuran berkas melebihi batas maksimal 10 MB.');
+                alert('Peringatan: Ukuran berkas melebihi batas maksimal 2 MB.');
                 input.value = '';
                 fileInfo.classList.add('hidden');
                 window.hideSignaturePreview();

@@ -33,11 +33,12 @@ if ($docId <= 0) {
 
 $pdo = Database::getConnection();
 
-// Mengambil data dokumen dan memastikan penugasan penandatangan valid
+// Mengambil data dokumen (termasuk posisi TTD dari pemohon) dan memastikan penugasan valid
 $stmtCheck = $pdo->prepare("
     SELECT d.id, d.title, d.file_path, d.original_filename, d.requester_id,
-       ds.id AS signer_entry_id, ds.status AS sign_status,
-       ds.page_number, ds.pos_x, ds.pos_y, ds.box_width, ds.box_height
+           ds.id AS signer_entry_id, ds.status AS sign_status,
+           ds.page_number, ds.pos_x, ds.pos_y, ds.box_width, ds.box_height
+    FROM documents d
     JOIN document_signers ds ON d.id = ds.document_id
     WHERE d.id = :doc_id AND ds.signer_id = :signer_id
     LIMIT 1
@@ -60,6 +61,7 @@ if ($docData['sign_status'] !== 'menunggu') {
 // KASUS A: PERSETUJUAN DOKUMEN (APPROVE)
 // ==========================================
 if ($action === 'approve') {
+    // Posisi TTD diambil dari database (ditentukan pemohon), bukan dari $_POST
     $pageNum   = (int)$docData['page_number'];
     $posX      = (float)$docData['pos_x'];
     $posY      = (float)$docData['pos_y'];
@@ -90,7 +92,7 @@ if ($action === 'approve') {
     try {
         $pdo->beginTransaction();
 
-        // 1. Perbarui data document_signers
+        // 1. Perbarui data document_signers (posisi tidak ditimpa)
         $stmtUpdateSigner = $pdo->prepare("
             UPDATE document_signers
             SET signature_type = 'canvas',
@@ -100,15 +102,6 @@ if ($action === 'approve') {
             WHERE id = :signer_entry_id
         ");
         $stmtUpdateSigner->execute([
-            ':sig_path'        => $sigFilePath,
-            ':signer_entry_id' => $docData['signer_entry_id']
-        ]);
-        $stmtUpdateSigner->execute([
-            ':page_num'        => $pageNum,
-            ':pos_x'           => $posX,
-            ':pos_y'           => $posY,
-            ':box_width'       => $boxWidth,
-            ':box_height'      => $boxHeight,
             ':sig_path'        => $sigFilePath,
             ':signer_entry_id' => $docData['signer_entry_id']
         ]);
@@ -157,7 +150,7 @@ if ($action === 'approve') {
 
         $pdo->commit();
 
-        // 4. Catat aktivitas pengesahan ke Audit Trail
+        // 5. Catat aktivitas pengesahan ke Audit Trail
         writeAuditLog('SIGN_DOC', $docId, 'Mengesahkan dokumen pada halaman ' . $pageNum . ' di koordinat X:' . round($posX) . ', Y:' . round($posY));
 
         header('Location: ' . BASE_URL . '/views/penandatangan/dashboard.php?sign_success=1');

@@ -82,9 +82,9 @@ $fileTmpPath   = $_FILES['pdf_file']['tmp_name'];
 $originalName  = basename($_FILES['pdf_file']['name']);
 $fileSize      = (int)$_FILES['pdf_file']['size'];
 
-// Cek Ukuran Berkas (Maksimal 10 MB)
+// Cek Ukuran Berkas (Maksimal 2 MB)
 if ($fileSize > MAX_UPLOAD_SIZE) {
-    $_SESSION['upload_error'] = 'Ukuran berkas melebihi batas maksimal 10 MB.';
+    $_SESSION['upload_error'] = 'Ukuran berkas melebihi batas maksimal 2 MB.';
     header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
     exit;
 }
