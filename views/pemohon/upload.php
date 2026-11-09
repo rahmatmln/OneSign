@@ -2,6 +2,7 @@
 /**
  * OneSign - Form Pengajuan Dokumen PDF (Pemohon)
  * Design Stitch: Pengajuan Dokumen OneSign (100% Identik)
+ * REVISI: Pemohon menentukan posisi tanda tangan penandatangan pada pratinjau PDF.
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
@@ -40,7 +41,7 @@ require_once __DIR__ . '/../layouts/header.php';
             Pengajuan Dokumen
         </h1>
         <p class="font-body-md text-body-md text-secondary">
-            Unggah berkas naskah PDF dan tentukan pejabat penandatangan pengesahan.
+            Unggah berkas naskah PDF, tentukan pejabat penandatangan, dan atur posisi tanda tangan pada dokumen.
         </p>
     </div>
 </div>
@@ -60,7 +61,7 @@ require_once __DIR__ . '/../layouts/header.php';
         <span class="text-outline-variant font-bold text-xs">/</span>
         <div class="flex items-center gap-space-xs text-secondary font-label-md text-label-md">
             <span class="w-6 h-6 rounded-full bg-surface-container text-secondary flex items-center justify-center text-label-sm font-bold">3</span>
-            <span>Konfirmasi</span>
+            <span>Atur Posisi TTD</span>
         </div>
     </div>
     <span class="text-body-sm text-secondary hidden sm:inline">Langkah 1 dari 3</span>
@@ -244,6 +245,85 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!-- REVISI: Atur Posisi Tanda Tangan oleh Pemohon                 -->
+    <!-- ============================================================ -->
+    <input type="hidden" name="page_number" id="form-page-num" value="1">
+    <input type="hidden" name="pos_x" id="form-pos-x" value="0">
+    <input type="hidden" name="pos_y" id="form-pos-y" value="0">
+    <input type="hidden" name="box_width" id="form-box-width" value="170">
+    <input type="hidden" name="box_height" id="form-box-height" value="80">
+
+    <div id="position-card" class="hidden bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-outline-variant/20 space-y-space-md">
+        <div class="flex flex-wrap items-center justify-between gap-space-sm">
+            <div class="flex items-center gap-space-xs text-on-surface font-headline-sm text-headline-sm font-semibold">
+                <span class="material-symbols-outlined text-primary text-[20px]">draw</span>
+                <span>Atur Posisi Tanda Tangan</span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-space-sm">
+                <!-- Navigasi Halaman -->
+                <div class="flex items-center bg-surface-container-low rounded-lg p-0.5 border border-outline-variant/20">
+                    <button type="button" id="btn-prev-page" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="Halaman Sebelumnya">
+                        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                    </button>
+                    <div class="px-3 font-body-sm text-body-sm text-on-surface flex items-center gap-1.5">
+                        <span class="text-secondary">Halaman</span>
+                        <span id="current-page-num" class="font-bold text-primary">1</span>
+                        <span class="text-secondary">dari</span>
+                        <span id="total-pages-num" class="font-bold">1</span>
+                    </div>
+                    <button type="button" id="btn-next-page" class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="Halaman Berikutnya">
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
+                </div>
+
+                <!-- Kontrol Ukuran Kotak -->
+                <div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1 rounded-lg border border-outline-variant/20">
+                    <span class="text-secondary font-label-sm text-label-sm font-semibold">Ukuran:</span>
+                    <button type="button" id="btn-shrink-sig" class="w-7 h-7 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/30 flex items-center justify-center" title="Perkecil">
+                        <span class="material-symbols-outlined text-[16px]">remove</span>
+                    </button>
+                    <span id="sig-scale-label" class="font-bold text-primary min-w-[45px] text-center">100%</span>
+                    <button type="button" id="btn-grow-sig" class="w-7 h-7 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/30 flex items-center justify-center" title="Perbesar">
+                        <span class="material-symbols-outlined text-[16px]">add</span>
+                    </button>
+                </div>
+
+                <!-- Indikator Koordinat -->
+                <div class="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/20 text-secondary" style="font-family:'JetBrains Mono',monospace;font-size:12px;">
+                    <span>X: <b id="coord-x-val" class="text-primary">0</b></span>
+                    <span>Y: <b id="coord-y-val" class="text-primary">0</b></span>
+                </div>
+            </div>
+        </div>
+
+        <p class="font-body-sm text-body-sm text-secondary">
+            Geser kotak ke tempat dosen harus menandatangani, atau tarik pojok kanan bawah untuk mengubah ukuran. Pindah halaman jika tanda tangan harus berada di halaman lain.
+        </p>
+
+        <div class="flex justify-center overflow-x-auto bg-surface-container-low/50 rounded-xl p-4 border border-outline-variant/10">
+            <div id="pdf-canvas-container" style="position:relative;background:#ffffff;box-shadow:0 10px 30px -5px rgba(0,35,111,.15);">
+                <canvas id="pdf-render-canvas" class="block"></canvas>
+
+                <div id="draggable-sig-box"
+                     class="absolute border-2 border-dashed border-primary bg-surface-container-lowest/90 rounded-xl flex flex-col items-center justify-center text-center shadow-lg"
+                     style="left:100px;top:100px;width:230px;height:108px;z-index:30;cursor:grab;touch-action:none;user-select:none;">
+                    <span class="material-symbols-outlined text-primary text-[22px] pointer-events-none">draw</span>
+                    <span class="font-bold text-primary pointer-events-none" style="font-size:11px;">AREA TANDA TANGAN</span>
+                    <span class="text-secondary pointer-events-none" style="font-size:9px;">Dosen menandatangani di sini</span>
+
+                    <div id="sig-box-resizer"
+                         class="absolute -right-2.5 -bottom-2.5 w-6 h-6 bg-primary text-on-primary rounded-full border-2 border-white shadow-md flex items-center justify-center"
+                         style="cursor:nwse-resize;touch-action:none;"
+                         title="Tarik untuk mengubah ukuran">
+                        <span class="material-symbols-outlined text-[13px] pointer-events-none">drag_pan</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Form Bottom Action Bar (Stitch 100% Identik) -->
     <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm border border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-space-md">
         <div class="flex items-center gap-space-sm">
@@ -263,7 +343,12 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 </form>
 
+<!-- Mozilla PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
+    // ==========================================
+    // Bagian 1: Pemilihan berkas (logika asli)
+    // ==========================================
     function displaySelectedFile(input) {
         const fileInfo = document.getElementById('file-info');
         const fileName = document.getElementById('file-name');
@@ -277,6 +362,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 alert('Peringatan: Berkas yang dipilih harus berupa file PDF (.pdf).');
                 input.value = '';
                 fileInfo.classList.add('hidden');
+                window.hideSignaturePreview();
                 return;
             }
 
@@ -285,6 +371,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 alert('Peringatan: Ukuran berkas melebihi batas maksimal 10 MB.');
                 input.value = '';
                 fileInfo.classList.add('hidden');
+                window.hideSignaturePreview();
                 return;
             }
 
@@ -299,8 +386,12 @@ require_once __DIR__ . '/../layouts/header.php';
                 const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
                 titleInput.value = cleanName;
             }
+
+            // REVISI: tampilkan pratinjau PDF untuk mengatur posisi TTD
+            window.loadSignaturePreview(file);
         } else {
             fileInfo.classList.add('hidden');
+            window.hideSignaturePreview();
         }
     }
 
@@ -309,7 +400,164 @@ require_once __DIR__ . '/../layouts/header.php';
         const fileInfo = document.getElementById('file-info');
         if (input) input.value = '';
         if (fileInfo) fileInfo.classList.add('hidden');
+        window.hideSignaturePreview();
     }
+
+    // ==========================================
+    // Bagian 2: Pratinjau PDF & kotak posisi TTD
+    // ==========================================
+    (function () {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const SCALE  = 1.35;      // skala render di layar
+        const BASE_W = 170;       // lebar dasar kotak (pt)
+        const BASE_H = 80;        // tinggi dasar kotak (pt)
+        const RATIO  = BASE_W / BASE_H;
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let mult = 1;
+        let busy = false;
+
+        const posCard   = document.getElementById('position-card');
+        const canvas    = document.getElementById('pdf-render-canvas');
+        const ctx       = canvas.getContext('2d');
+        const container = document.getElementById('pdf-canvas-container');
+        const box       = document.getElementById('draggable-sig-box');
+        const resizer   = document.getElementById('sig-box-resizer');
+
+        function updateCoords() {
+            const px = Math.round(box.offsetLeft / SCALE);
+            const py = Math.round(box.offsetTop / SCALE);
+            document.getElementById('form-page-num').value   = pageNum;
+            document.getElementById('form-pos-x').value      = px;
+            document.getElementById('form-pos-y').value      = py;
+            document.getElementById('form-box-width').value  = Math.round(box.offsetWidth / SCALE);
+            document.getElementById('form-box-height').value = Math.round(box.offsetHeight / SCALE);
+            document.getElementById('coord-x-val').innerText = px;
+            document.getElementById('coord-y-val').innerText = py;
+        }
+
+        function setBoxScale(m) {
+            mult = Math.max(0.7, Math.min(2.5, m));
+            let w = Math.round(BASE_W * SCALE * mult);
+            let h = Math.round(w / RATIO);
+
+            if (container.clientWidth && w > container.clientWidth) {
+                w = container.clientWidth;
+                h = Math.round(w / RATIO);
+                mult = w / (BASE_W * SCALE);
+            }
+
+            box.style.width  = w + 'px';
+            box.style.height = h + 'px';
+            box.style.left = Math.min(box.offsetLeft, Math.max(0, container.clientWidth - w)) + 'px';
+            box.style.top  = Math.min(box.offsetTop,  Math.max(0, container.clientHeight - h)) + 'px';
+
+            document.getElementById('sig-scale-label').innerText = Math.round(mult * 100) + '%';
+            updateCoords();
+        }
+
+        async function renderPage(num) {
+            if (!pdfDoc || busy) return;
+            busy = true;
+            try {
+                const page = await pdfDoc.getPage(num);
+                const vp = page.getViewport({ scale: SCALE });
+                canvas.width  = vp.width;
+                canvas.height = vp.height;
+                container.style.width  = vp.width + 'px';
+                container.style.height = vp.height + 'px';
+                await page.render({ canvasContext: ctx, viewport: vp }).promise;
+                pageNum = num;
+                document.getElementById('current-page-num').innerText = num;
+            } finally {
+                busy = false;
+            }
+            setBoxScale(mult);
+        }
+
+        window.loadSignaturePreview = async function (file) {
+            try {
+                const buf = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+                document.getElementById('total-pages-num').innerText = pdfDoc.numPages;
+                posCard.classList.remove('hidden');
+                mult = 1;
+                pageNum = 1;
+                box.style.left = '100px';
+                box.style.top  = '100px';
+                await renderPage(1);
+            } catch (err) {
+                console.error('Gagal memuat pratinjau PDF:', err);
+                pdfDoc = null;
+                posCard.classList.add('hidden');
+                alert('PDF tidak dapat ditampilkan untuk mengatur posisi tanda tangan. Pastikan berkas PDF valid.');
+            }
+        };
+
+        window.hideSignaturePreview = function () {
+            pdfDoc = null;
+            posCard.classList.add('hidden');
+        };
+
+        // Navigasi halaman
+        document.getElementById('btn-prev-page').addEventListener('click', function () {
+            if (pdfDoc && pageNum > 1) renderPage(pageNum - 1);
+        });
+        document.getElementById('btn-next-page').addEventListener('click', function () {
+            if (pdfDoc && pageNum < pdfDoc.numPages) renderPage(pageNum + 1);
+        });
+
+        // Ukuran kotak
+        document.getElementById('btn-grow-sig').addEventListener('click', function () { setBoxScale(mult + 0.15); });
+        document.getElementById('btn-shrink-sig').addEventListener('click', function () { setBoxScale(mult - 0.15); });
+
+        // Geser kotak
+        let drag = null;
+        box.addEventListener('pointerdown', function (e) {
+            if (e.target.closest('#sig-box-resizer')) return;
+            box.setPointerCapture(e.pointerId);
+            drag = { x: e.clientX, y: e.clientY, l: box.offsetLeft, t: box.offsetTop };
+            box.style.cursor = 'grabbing';
+        });
+        box.addEventListener('pointermove', function (e) {
+            if (!drag) return;
+            const maxL = Math.max(0, container.clientWidth  - box.offsetWidth);
+            const maxT = Math.max(0, container.clientHeight - box.offsetHeight);
+            box.style.left = Math.max(0, Math.min(drag.l + e.clientX - drag.x, maxL)) + 'px';
+            box.style.top  = Math.max(0, Math.min(drag.t + e.clientY - drag.y, maxT)) + 'px';
+            updateCoords();
+        });
+        function endDrag() { drag = null; box.style.cursor = 'grab'; }
+        box.addEventListener('pointerup', endDrag);
+        box.addEventListener('pointercancel', endDrag);
+
+        // Ubah ukuran dari pojok kanan bawah
+        let rs = null;
+        resizer.addEventListener('pointerdown', function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            resizer.setPointerCapture(e.pointerId);
+            rs = { x: e.clientX, w: box.offsetWidth };
+        });
+        resizer.addEventListener('pointermove', function (e) {
+            if (!rs) return;
+            setBoxScale((rs.w + e.clientX - rs.x) / (BASE_W * SCALE));
+        });
+        resizer.addEventListener('pointerup', function () { rs = null; });
+        resizer.addEventListener('pointercancel', function () { rs = null; });
+
+        // Pastikan posisi sudah ditentukan sebelum form dikirim
+        document.getElementById('upload-form').addEventListener('submit', function (e) {
+            if (!pdfDoc) {
+                e.preventDefault();
+                alert('Pratinjau dokumen belum siap. Pilih ulang berkas PDF lalu atur posisi tanda tangan.');
+                return;
+            }
+            updateCoords();
+        });
+    })();
 </script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

@@ -2,6 +2,7 @@
 /**
  * OneSign - Upload Action Handler
  * Memproses pengunggahan berkas PDF dan pendaftaran antrean penandatangan
+ * REVISI: posisi tanda tangan ditentukan oleh pemohon saat pengajuan.
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
@@ -42,6 +43,19 @@ if (empty($title) || empty($category) || $signerId <= 0) {
 $allowedConfidentiality = ['publik', 'internal', 'rahasia'];
 if (!in_array($confidentiality, $allowedConfidentiality, true)) {
     $confidentiality = 'internal';
+}
+
+// 2b. REVISI: Posisi tanda tangan yang ditentukan oleh pemohon
+$pageNum   = max(1, (int)($_POST['page_number'] ?? 1));
+$posX      = (float)($_POST['pos_x'] ?? -1);
+$posY      = (float)($_POST['pos_y'] ?? -1);
+$boxWidth  = (float)($_POST['box_width'] ?? 0);
+$boxHeight = (float)($_POST['box_height'] ?? 0);
+
+if ($posX < 0 || $posY < 0 || $boxWidth < 50 || $boxHeight < 20) {
+    $_SESSION['upload_error'] = 'Posisi tanda tangan belum ditentukan. Silakan atur posisi pada pratinjau dokumen.';
+    header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
+    exit;
 }
 
 $pdo = Database::getConnection();
@@ -122,14 +136,19 @@ try {
     ]);
     $docId = (int)$pdo->lastInsertId();
 
-    // Simpan ke tabel document_signers dengan koordinat awal default
+    // REVISI: Simpan ke document_signers dengan posisi TTD pilihan pemohon
     $stmtSigner = $pdo->prepare("
         INSERT INTO document_signers (document_id, signer_id, page_number, pos_x, pos_y, box_width, box_height, status)
-        VALUES (:document_id, :signer_id, 1, 380, 510, 170, 80, 'menunggu')
+        VALUES (:document_id, :signer_id, :page_number, :pos_x, :pos_y, :box_width, :box_height, 'menunggu')
     ");
     $stmtSigner->execute([
         ':document_id' => $docId,
-        ':signer_id'   => $signerId
+        ':signer_id'   => $signerId,
+        ':page_number' => $pageNum,
+        ':pos_x'       => $posX,
+        ':pos_y'       => $posY,
+        ':box_width'   => $boxWidth,
+        ':box_height'  => $boxHeight
     ]);
 
     // Kirim notifikasi in-app ke penandatangan
@@ -149,7 +168,7 @@ try {
     $pdo->commit();
 
     // 7. Catat ke Audit Log
-    writeAuditLog('UPLOAD_DOC', $docId, 'Mengunggah naskah PDF: ' . $originalName . ' untuk ditandatangani oleh ' . $signer['full_name']);
+    writeAuditLog('UPLOAD_DOC', $docId, 'Mengunggah naskah PDF: ' . $originalName . ' untuk ditandatangani oleh ' . $signer['full_name'] . ' (posisi TTD: hal. ' . $pageNum . ', X:' . round($posX) . ', Y:' . round($posY) . ')');
 
     // Arahkan ke dashboard dengan pesan sukses
     header('Location: ' . BASE_URL . '/views/pemohon/dashboard.php?upload_success=1');

@@ -1,7 +1,8 @@
 <?php
 /**
  * OneSign - Workspace Penandatanganan Dokumen (Dosen)
- * Menampilkan PDF viewer berbasis PDF.js, kotak geser koordinat (FR-07), dan kanvas TTD (FR-02)
+ * Menampilkan PDF viewer berbasis PDF.js, kotak TTD terkunci (posisi ditentukan pemohon), dan kanvas TTD (FR-02)
+ * REVISI: penandatangan tidak lagi mengatur posisi; hanya menggores TTD lalu mengesahkan / menolak.
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
@@ -169,14 +170,6 @@ $csrfToken = generateCsrfToken();
     <!-- Mozilla PDF.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
-        .draggable-signature-box {
-            cursor: grab;
-            user-select: none;
-            touch-action: none;
-        }
-        .draggable-signature-box:active {
-            cursor: grabbing;
-        }
         #pdf-canvas-container {
             position: relative;
             box-shadow: 0 10px 30px -5px rgba(0, 35, 111, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -255,7 +248,7 @@ $csrfToken = generateCsrfToken();
     <!-- Main Workspace Area -->
     <main class="w-full px-space-md sm:px-space-lg py-space-md flex-1 flex flex-col">
         
-        <!-- Toolbar Kontrol PDF & Indikator Koordinat (Stitch Style) -->
+        <!-- Toolbar Navigasi Halaman & Info Posisi (read-only) -->
         <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-sm mb-space-md flex flex-wrap items-center justify-between gap-3 shadow-sm">
             
             <!-- Page Navigation -->
@@ -276,7 +269,7 @@ $csrfToken = generateCsrfToken();
                 </div>
             </div>
 
-            <!-- Coordinate Readout Panel -->
+            <!-- Info posisi TTD yang ditentukan pemohon -->
             <div class="flex items-center gap-space-md bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline-variant/20 font-code-audit text-code-audit text-secondary">
                 <div class="flex items-center gap-1">
                     <span class="text-secondary font-medium">X:</span>
@@ -287,45 +280,30 @@ $csrfToken = generateCsrfToken();
                     <span id="coord-y-val" class="font-bold text-primary">0</span> <span class="text-[10px]">pt</span>
                 </div>
                 <div class="flex items-center gap-1 border-l border-outline-variant/30 pl-2">
-                    <span class="text-secondary font-medium">Hal:</span>
-                    <span id="target-page-val" class="font-bold text-on-surface">1</span>
+                    <span class="text-secondary font-medium">Hal TTD:</span>
+                    <span id="target-page-val" class="font-bold text-on-surface"><?= (int)$doc['page_number'] ?></span>
                 </div>
             </div>
 
-            <!-- Kontrol Skala Ukuran Kotak TTD (Rasio Tetap) -->
-            <div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1.5 rounded-lg border border-outline-variant/20">
-                <span class="text-secondary font-label-sm text-label-sm font-semibold">Skala TTD:</span>
-                <button type="button" id="btn-shrink-sig" class="w-7 h-7 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/30 text-on-surface flex items-center justify-center transition-colors" title="Perkecil tanda tangan">
-                    <span class="material-symbols-outlined text-[16px]">remove</span>
-                </button>
-                <span id="sig-scale-label" class="font-code-audit text-code-audit font-bold text-primary min-w-[45px] text-center">100%</span>
-                <button type="button" id="btn-grow-sig" class="w-7 h-7 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/30 text-on-surface flex items-center justify-center transition-colors" title="Perbesar tanda tangan">
-                    <span class="material-symbols-outlined text-[16px]">add</span>
-                </button>
-                <button type="button" id="btn-reset-sig" class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold transition-colors" title="Kembalikan ukuran normal">
-                    Reset
-                </button>
-            </div>
-
-            <div class="hidden xl:flex items-center gap-1.5 text-secondary font-body-sm text-body-sm">
-                <span class="material-symbols-outlined text-[16px] text-primary">touch_app</span>
-                <span>Geser kotak atau tarik pojok kanan bawah untuk menyesuaikan tanda tangan.</span>
+            <div class="hidden lg:flex items-center gap-1.5 text-secondary font-body-sm text-body-sm">
+                <span class="material-symbols-outlined text-[16px] text-primary">lock</span>
+                <span>Posisi tanda tangan sudah ditentukan oleh pemohon. Klik <b>Gores TTD</b> lalu <b>Sahkan Dokumen</b>.</span>
             </div>
 
         </div>
 
-        <!-- Area Kanvas PDF & Overlay Kotak TTD -->
+        <!-- Area Kanvas PDF & Overlay Kotak TTD (terkunci) -->
         <div class="flex-1 flex justify-center overflow-x-auto py-2 bg-surface-container-low/50 rounded-xl p-4 border border-outline-variant/10">
             
-            <div id="pdf-canvas-container" class="rounded-lg overflow-hidden relative">
+            <div id="pdf-canvas-container" class="rounded-lg relative">
                 <!-- Kanvas Render Halaman PDF oleh PDF.js -->
                 <canvas id="pdf-render-canvas" class="block"></canvas>
 
-                <!-- Kotak Geser Tanda Tangan (Draggable & Resizable Box - Stitch Institutional Style) -->
+                <!-- Kotak Tanda Tangan TERKUNCI (posisi dari pemohon) -->
                 <?php if ($doc['sign_status'] === 'menunggu'): ?>
                     <div id="draggable-sig-box" 
-                         class="draggable-signature-box absolute border-2 border-dashed border-primary bg-surface-container-lowest/90 backdrop-blur-xs rounded-xl p-2.5 flex flex-col justify-between text-center shadow-lg select-none"
-                         style="width: 230px; height: 108px; left: 100px; top: 100px; z-index: 30;">
+                         class="absolute border-2 border-dashed border-primary bg-surface-container-lowest/90 rounded-xl p-2.5 flex-col justify-between text-center shadow-lg select-none pointer-events-none"
+                         style="display:none; z-index:30;">
                         
                         <!-- State 1: Placeholder Sebelum Gores TTD -->
                         <div id="sig-box-placeholder" class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none text-center">
@@ -334,7 +312,7 @@ $csrfToken = generateCsrfToken();
                                 AREA TANDA TANGAN
                             </span>
                             <span id="sig-ph-sub" class="font-body-sm text-body-sm text-secondary block mt-0.5 transition-all" style="font-size: 9px;">
-                                Geser posisi & atur ukuran tanda tangan
+                                Tanda tangan di area ini
                             </span>
                         </div>
 
@@ -352,14 +330,6 @@ $csrfToken = generateCsrfToken();
                                 </span>
                             </div>
                         </div>
-
-                        <!-- Handle Tarik Perbesar / Perkecil Sudut Kanan Bawah (Resizer Handle) -->
-                        <div id="sig-box-resizer" 
-                             class="absolute -right-2.5 -bottom-2.5 w-6 h-6 bg-primary hover:bg-primary-container text-on-primary rounded-full border-2 border-surface-container-lowest shadow-md cursor-nwse-resize flex items-center justify-center transition-all select-none z-40"
-                             title="Tarik untuk memperbesar / memperkecil tanda tangan (rasio tetap)">
-                            <span class="material-symbols-outlined text-[13px] pointer-events-none">drag_pan</span>
-                        </div>
-
                     </div>
                 <?php endif; ?>
 
@@ -369,15 +339,10 @@ $csrfToken = generateCsrfToken();
 
     </main>
 
-    <!-- Hidden Form untuk Pengiriman Data Persetujuan -->
+    <!-- Hidden Form untuk Pengiriman Data Persetujuan (posisi diambil dari database di sisi server) -->
     <form id="approval-form" action="<?= BASE_URL ?>/actions/sign_action.php?action=approve" method="POST" class="hidden">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="doc_id" value="<?= $doc['id'] ?>">
-        <input type="hidden" name="page_number" id="form-page-num" value="1">
-        <input type="hidden" name="pos_x" id="form-pos-x" value="0">
-        <input type="hidden" name="pos_y" id="form-pos-y" value="0">
-        <input type="hidden" name="box_width" id="form-box-width" value="170">
-        <input type="hidden" name="box_height" id="form-box-height" value="80">
         <input type="hidden" name="signature_data" id="form-signature-data" value="">
     </form>
 
@@ -463,14 +428,23 @@ $csrfToken = generateCsrfToken();
         </div>
     </div>
 
-    <!-- Script Logika PDF.js, Draggable Box & Canvas Pad -->
+    <!-- Script Logika PDF.js, Kotak TTD Terkunci & Canvas Pad -->
     <script>
         // Konfigurasi Worker PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        // Posisi tanda tangan yang ditentukan pemohon (satuan point PDF, dari database)
+        const SIG = {
+            page: <?= (int)$doc['page_number'] ?>,
+            x: <?= (float)$doc['pos_x'] ?>,
+            y: <?= (float)$doc['pos_y'] ?>,
+            w: <?= (float)$doc['box_width'] ?>,
+            h: <?= (float)$doc['box_height'] ?>
+        };
+
         const pdfUrl = '<?= BASE_URL ?>/actions/view_pdf.php?doc_id=<?= $doc['id'] ?>';
         let pdfDoc = null;
-        let pageNum = 1;
+        let pageNum = SIG.page;
         let pageRendering = false;
         let pageNumPending = null;
         let scale = 1.35; // Skala render di layar
@@ -503,13 +477,11 @@ $csrfToken = generateCsrfToken();
                         renderPage(pageNumPending);
                         pageNumPending = null;
                     }
-                    updateCoordinateValues();
+                    placeLockedBox();
                 });
             });
 
             document.getElementById('current-page-num').innerText = num;
-            document.getElementById('target-page-val').innerText = num;
-            document.getElementById('form-page-num').value = num;
         }
 
         function queueRenderPage(num) {
@@ -536,6 +508,7 @@ $csrfToken = generateCsrfToken();
         pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
             pdfDoc = pdfDoc_;
             document.getElementById('total-pages-num').innerText = pdfDoc.numPages;
+            if (pageNum > pdfDoc.numPages) pageNum = 1;
             renderPage(pageNum);
         }).catch(function(error) {
             console.error('Gagal merender PDF:', error);
@@ -543,242 +516,36 @@ $csrfToken = generateCsrfToken();
         });
 
         // ==========================================
-        // Logika Draggable & Resizable Box (FR-07)
+        // Kotak TTD terkunci (posisi dari pemohon)
         // ==========================================
-        const basePtW = 170;
-        const basePtH = 80;
-        const aspectRatio = basePtW / basePtH; // 2.125
-        let currentScaleMult = 1.0;
-
-        function updateCoordinateValues() {
+        function placeLockedBox() {
             if (!dragBox) return;
-            const pixelX = dragBox.offsetLeft;
-            const pixelY = dragBox.offsetTop;
 
-            // Konversi koordinat layar (skala 1.35) kembali ke ukuran standar PDF (Points, 72 DPI)
-            const pointX = Math.round(pixelX / scale);
-            const pointY = Math.round(pixelY / scale);
-            const pointW = Math.round(dragBox.offsetWidth / scale);
-            const pointH = Math.round(dragBox.offsetHeight / scale);
-
-            const cxElem = document.getElementById('coord-x-val');
-            const cyElem = document.getElementById('coord-y-val');
-            if (cxElem) cxElem.innerText = pointX;
-            if (cyElem) cyElem.innerText = pointY;
-
-            const fxElem = document.getElementById('form-pos-x');
-            const fyElem = document.getElementById('form-pos-y');
-            const fwElem = document.getElementById('form-box-width');
-            const fhElem = document.getElementById('form-box-height');
-            if (fxElem) fxElem.value = pointX;
-            if (fyElem) fyElem.value = pointY;
-            if (fwElem) fwElem.value = pointW;
-            if (fhElem) fhElem.value = pointH;
-        }
-
-        function applySigBoxScale(multiplier) {
-            if (!dragBox) return;
-            // Batas minimal 70% dan maksimal 250%
-            multiplier = Math.max(0.7, Math.min(2.5, multiplier));
-            currentScaleMult = multiplier;
-
-            const basePixelW = basePtW * scale;
-            let newW = Math.round(basePixelW * multiplier);
-            let newH = Math.round(newW / aspectRatio);
-
-            // Batasi agar tidak meluap dari kanvas dokumen
-            if (container.clientWidth > 0 && newW > container.clientWidth) {
-                newW = container.clientWidth;
-                newH = Math.round(newW / aspectRatio);
-                currentScaleMult = newW / basePixelW;
-            }
-            if (container.clientHeight > 0 && newH > container.clientHeight) {
-                newH = container.clientHeight;
-                newW = Math.round(newH * aspectRatio);
-                currentScaleMult = newW / basePixelW;
+            // Kotak hanya tampil pada halaman yang ditentukan pemohon
+            if (pageNum !== SIG.page) {
+                dragBox.style.display = 'none';
+                return;
             }
 
-            // Geser posisi jika perbesaran melewati batas kanan atau bawah
-            const maxLeft = Math.max(0, container.clientWidth - newW);
-            const maxTop  = Math.max(0, container.clientHeight - newH);
+            dragBox.style.display = 'flex';
+            dragBox.style.left   = Math.round(SIG.x * scale) + 'px';
+            dragBox.style.top    = Math.round(SIG.y * scale) + 'px';
+            dragBox.style.width  = Math.round(SIG.w * scale) + 'px';
+            dragBox.style.height = Math.round(SIG.h * scale) + 'px';
 
-            if (dragBox.offsetLeft > maxLeft) {
-                dragBox.style.left = maxLeft + 'px';
-            }
-            if (dragBox.offsetTop > maxTop) {
-                dragBox.style.top = maxTop + 'px';
-            }
+            // Skala ukuran font teks secara proporsional terhadap lebar kotak
+            const k = SIG.w / 170;
+            const setFont = function(id, px, min) {
+                const el = document.getElementById(id);
+                if (el) el.style.fontSize = Math.max(min, Math.round(px * k)) + 'px';
+            };
+            setFont('sig-ph-title', 11, 8);
+            setFont('sig-ph-sub', 9, 7);
+            setFont('sig-signer-name', 10.5, 9);
+            setFont('sig-signer-nip', 8.5, 7);
 
-            dragBox.style.width  = newW + 'px';
-            dragBox.style.height = newH + 'px';
-
-            // Skala ukuran font teks identitas dan placeholder secara proporsional
-            const phTitle = document.getElementById('sig-ph-title');
-            const phSub   = document.getElementById('sig-ph-sub');
-            const sigName = document.getElementById('sig-signer-name');
-            const sigNip  = document.getElementById('sig-signer-nip');
-
-            if (phTitle) phTitle.style.fontSize = Math.round(11 * currentScaleMult) + 'px';
-            if (phSub)   phSub.style.fontSize   = Math.max(8, Math.round(9 * currentScaleMult)) + 'px';
-            if (sigName) sigName.style.fontSize = Math.max(9, Math.round(10.5 * currentScaleMult)) + 'px';
-            if (sigNip)  sigNip.style.fontSize  = Math.max(7, Math.round(8.5 * currentScaleMult)) + 'px';
-
-            const scaleLabel = document.getElementById('sig-scale-label');
-            if (scaleLabel) {
-                scaleLabel.innerText = Math.round(currentScaleMult * 100) + '%';
-            }
-
-            updateCoordinateValues();
-        }
-
-        if (dragBox) {
-            let isDragging = false;
-            let startX, startY, initialLeft, initialTop;
-
-            dragBox.addEventListener('mousedown', startDrag);
-            dragBox.addEventListener('touchstart', startDragTouch, { passive: false });
-
-            function startDrag(e) {
-                if (e.target.closest('#sig-box-resizer')) return;
-                isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                initialLeft = dragBox.offsetLeft;
-                initialTop = dragBox.offsetTop;
-                document.addEventListener('mousemove', onDrag);
-                document.addEventListener('mouseup', stopDrag);
-            }
-
-            function startDragTouch(e) {
-                if (e.target.closest('#sig-box-resizer')) return;
-                if (e.touches.length === 1) {
-                    isDragging = true;
-                    startX = e.touches[0].clientX;
-                    startY = e.touches[0].clientY;
-                    initialLeft = dragBox.offsetLeft;
-                    initialTop = dragBox.offsetTop;
-                    document.addEventListener('touchmove', onDragTouch, { passive: false });
-                    document.addEventListener('touchend', stopDragTouch);
-                }
-            }
-
-            function onDrag(e) {
-                if (!isDragging) return;
-                updatePosition(e.clientX - startX, e.clientY - startY);
-            }
-
-            function onDragTouch(e) {
-                if (!isDragging) return;
-                e.preventDefault();
-                updatePosition(e.touches[0].clientX - startX, e.touches[0].clientY - startY);
-            }
-
-            function updatePosition(dx, dy) {
-                const maxLeft = Math.max(0, container.clientWidth - dragBox.offsetWidth);
-                const maxTop  = Math.max(0, container.clientHeight - dragBox.offsetHeight);
-
-                let newLeft = Math.max(0, Math.min(initialLeft + dx, maxLeft));
-                let newTop  = Math.max(0, Math.min(initialTop + dy, maxTop));
-
-                dragBox.style.left = newLeft + 'px';
-                dragBox.style.top  = newTop + 'px';
-
-                updateCoordinateValues();
-            }
-
-            function stopDrag() {
-                isDragging = false;
-                document.removeEventListener('mousemove', onDrag);
-                document.removeEventListener('mouseup', stopDrag);
-            }
-
-            function stopDragTouch() {
-                isDragging = false;
-                document.removeEventListener('touchmove', onDragTouch);
-                document.removeEventListener('touchend', stopDragTouch);
-            }
-
-            // Event Listener Resizer Sudut Kanan Bawah
-            const resizer = document.getElementById('sig-box-resizer');
-            if (resizer) {
-                let isResizing = false;
-                let resizeStartX = 0;
-                let resizeStartWidth = 0;
-
-                resizer.addEventListener('mousedown', function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    isResizing = true;
-                    resizeStartX = e.clientX;
-                    resizeStartWidth = dragBox.offsetWidth;
-                    document.addEventListener('mousemove', onResizeMove);
-                    document.addEventListener('mouseup', stopResize);
-                });
-
-                resizer.addEventListener('touchstart', function(e) {
-                    e.stopPropagation();
-                    if (e.touches.length === 1) {
-                        isResizing = true;
-                        resizeStartX = e.touches[0].clientX;
-                        resizeStartWidth = dragBox.offsetWidth;
-                        document.addEventListener('touchmove', onResizeTouch, { passive: false });
-                        document.addEventListener('touchend', stopResizeTouch);
-                    }
-                }, { passive: false });
-
-                function onResizeMove(e) {
-                    if (!isResizing) return;
-                    const dx = e.clientX - resizeStartX;
-                    const targetWidth = resizeStartWidth + dx;
-                    const basePixelW = basePtW * scale;
-                    applySigBoxScale(targetWidth / basePixelW);
-                }
-
-                function onResizeTouch(e) {
-                    if (!isResizing) return;
-                    e.preventDefault();
-                    const dx = e.touches[0].clientX - resizeStartX;
-                    const targetWidth = resizeStartWidth + dx;
-                    const basePixelW = basePtW * scale;
-                    applySigBoxScale(targetWidth / basePixelW);
-                }
-
-                function stopResize() {
-                    isResizing = false;
-                    document.removeEventListener('mousemove', onResizeMove);
-                    document.removeEventListener('mouseup', stopResize);
-                }
-
-                function stopResizeTouch() {
-                    isResizing = false;
-                    document.removeEventListener('touchmove', onResizeTouch);
-                    document.removeEventListener('touchend', stopResizeTouch);
-                }
-            }
-
-            // Tombol Toolbar Skala (+, -, Reset)
-            const btnGrow = document.getElementById('btn-grow-sig');
-            const btnShrink = document.getElementById('btn-shrink-sig');
-            const btnReset = document.getElementById('btn-reset-sig');
-
-            if (btnGrow) {
-                btnGrow.addEventListener('click', function() {
-                    applySigBoxScale(currentScaleMult + 0.15);
-                });
-            }
-            if (btnShrink) {
-                btnShrink.addEventListener('click', function() {
-                    applySigBoxScale(currentScaleMult - 0.15);
-                });
-            }
-            if (btnReset) {
-                btnReset.addEventListener('click', function() {
-                    applySigBoxScale(1.0);
-                });
-            }
-
-            // Inisialisasi awal ukuran kotak
-            applySigBoxScale(1.0);
+            document.getElementById('coord-x-val').innerText = Math.round(SIG.x);
+            document.getElementById('coord-y-val').innerText = Math.round(SIG.y);
         }
 
         // ==========================================

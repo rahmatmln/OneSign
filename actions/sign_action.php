@@ -35,8 +35,9 @@ $pdo = Database::getConnection();
 
 // Mengambil data dokumen dan memastikan penugasan penandatangan valid
 $stmtCheck = $pdo->prepare("
-    SELECT d.id, d.title, d.file_path, d.original_filename, d.requester_id, ds.id AS signer_entry_id, ds.status AS sign_status
-    FROM documents d
+    SELECT d.id, d.title, d.file_path, d.original_filename, d.requester_id,
+       ds.id AS signer_entry_id, ds.status AS sign_status,
+       ds.page_number, ds.pos_x, ds.pos_y, ds.box_width, ds.box_height
     JOIN document_signers ds ON d.id = ds.document_id
     WHERE d.id = :doc_id AND ds.signer_id = :signer_id
     LIMIT 1
@@ -59,11 +60,11 @@ if ($docData['sign_status'] !== 'menunggu') {
 // KASUS A: PERSETUJUAN DOKUMEN (APPROVE)
 // ==========================================
 if ($action === 'approve') {
-    $pageNum   = max(1, (int)($_POST['page_number'] ?? 1));
-    $posX      = (float)($_POST['pos_x'] ?? 0);
-    $posY      = (float)($_POST['pos_y'] ?? 0);
-    $boxWidth  = (float)($_POST['box_width'] ?? 170);
-    $boxHeight = (float)($_POST['box_height'] ?? 80);
+    $pageNum   = (int)$docData['page_number'];
+    $posX      = (float)$docData['pos_x'];
+    $posY      = (float)$docData['pos_y'];
+    $boxWidth  = (float)$docData['box_width'];
+    $boxHeight = (float)$docData['box_height'];
     $sigData   = $_POST['signature_data'] ?? '';
 
     if (empty($sigData)) {
@@ -91,18 +92,17 @@ if ($action === 'approve') {
 
         // 1. Perbarui data document_signers
         $stmtUpdateSigner = $pdo->prepare("
-            UPDATE document_signers 
-            SET page_number = :page_num,
-                pos_x = :pos_x,
-                pos_y = :pos_y,
-                box_width = :box_width,
-                box_height = :box_height,
-                signature_type = 'canvas',
+            UPDATE document_signers
+            SET signature_type = 'canvas',
                 signature_image_path = :sig_path,
                 status = 'disetujui',
                 signed_at = NOW()
             WHERE id = :signer_entry_id
         ");
+        $stmtUpdateSigner->execute([
+            ':sig_path'        => $sigFilePath,
+            ':signer_entry_id' => $docData['signer_entry_id']
+        ]);
         $stmtUpdateSigner->execute([
             ':page_num'        => $pageNum,
             ':pos_x'           => $posX,
