@@ -11,10 +11,10 @@ class Database {
     public static function getConnection(): PDO {
         if (self::$instance === null) {
             $host     = '127.0.0.1';
-            $port     = '3307'; // Port MySQL / MariaDB XAMPP lokal
+            $port     = '3306'; // Pastikan sesuai XAMPP Anda
             $dbname   = 'onesign_db';
             $username = 'root';
-            $password = '';
+            $password = '';     // Kosongkan jika XAMPP tanpa password
 
             $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
             $options = [
