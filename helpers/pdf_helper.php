@@ -8,6 +8,9 @@
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use setasign\Fpdi\Fpdi;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\Output\QRGdImagePNG;
 
 class OneSignPdfEngine extends Fpdi {
     protected int $angle = 0;
@@ -93,6 +96,19 @@ class OneSignPdfEngine extends Fpdi {
     }
 
     /**
+     * Menghasilkan gambar QR code PNG dari sebuah URL
+     */
+    public static function generateQrCode(string $data, string $outputPath): void {
+        $options = new QROptions([
+            'outputInterface' => QRGdImagePNG::class,
+            'scale'           => 6,
+            'outputBase64'    => false,
+            'quietzoneSize'   => 2,
+        ]);
+        (new QRCode($options))->render($data, $outputPath);
+    }
+
+    /**
      * Menginjeksi gambar tanda tangan dan identitas penandatangan ke berkas PDF asli
      */
     public static function stampSignature(
@@ -106,10 +122,12 @@ class OneSignPdfEngine extends Fpdi {
         float $boxHeight,
         string $signerName = '',
         string $signerNip = '',
-        string $signedDate = ''
+        string $signedDate = '',
+        string $qrImagePath = ''
     ): bool {
         try {
             $pdf = new self('P', 'pt'); // Satuan Points (72 DPI) sesuai PDF.js
+            $pdf->SetAutoPageBreak(false); // Cegah FPDF membuat halaman baru otomatis saat stempel di dekat batas bawah
             $pageCount = $pdf->setSourceFile($sourcePdfPath);
 
             for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
@@ -160,6 +178,27 @@ class OneSignPdfEngine extends Fpdi {
                     $pdf->SetTextColor(71, 85, 105); // Slate
                     $pdf->SetXY($safeX, $lineY + (1.5 * $scaleFactor) + (8.5 * $scaleFactor));
                     $pdf->Cell($boxWidth, 8 * $scaleFactor, $infoText, 0, 1, 'C');
+
+                    // Tempelkan QR code verifikasi di samping tanda tangan
+                    if (!empty($qrImagePath) && file_exists($qrImagePath)) {
+                        $qrSize = max(35, min(65, $boxHeight * 0.55));
+                        $qrX = $safeX + $boxWidth + (6 * $scaleFactor);
+                        $qrY = max(10, min($safeY + ($boxHeight - $qrSize) / 2, $size['height'] - $qrSize - 15));
+
+                        // Jika QR melewati batas kanan halaman, tempatkan di sebelah kiri tanda tangan
+                        if ($qrX + $qrSize > $size['width'] - 10) {
+                            $qrX = max(10, $safeX - $qrSize - (6 * $scaleFactor));
+                        }
+
+                        $pdf->Image($qrImagePath, $qrX, $qrY, $qrSize, $qrSize, 'PNG');
+
+                        // Label kecil di bawah QR
+                        $qrLabelSize = max(5, round(5.5 * $scaleFactor, 1));
+                        $pdf->SetFont('Helvetica', '', $qrLabelSize);
+                        $pdf->SetTextColor(100, 116, 139);
+                        $pdf->SetXY($qrX, $qrY + $qrSize + 1);
+                        $pdf->Cell($qrSize, 6 * $scaleFactor, 'Scan Verifikasi', 0, 0, 'C');
+                    }
                 }
             }
 
@@ -182,6 +221,7 @@ class OneSignPdfEngine extends Fpdi {
     ): void {
         try {
             $pdf = new self('P', 'pt');
+            $pdf->SetAutoPageBreak(false);
             $pageCount = $pdf->setSourceFile($pdfPath);
 
             $labelKerahasiaan = strtoupper($docData['confidentiality'] ?? 'INTERNAL');
@@ -256,4 +296,3 @@ class OneSignPdfEngine extends Fpdi {
         }
     }
 }
-

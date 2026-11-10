@@ -86,10 +86,27 @@ if ($action === 'approve') {
     $sigFilePath = DIR_UPLOADS_SIGNATURES . $sigFileName;
     file_put_contents($sigFilePath, $data);
 
+    // Generate token verifikasi dan tangkap IP penandatangan
+    $verifyToken = bin2hex(random_bytes(16));
+    $signerIp = $_SERVER['HTTP_CF_CONNECTING_IP']
+        ?? $_SERVER['HTTP_X_FORWARDED_FOR']
+        ?? $_SERVER['REMOTE_ADDR']
+        ?? '127.0.0.1';
+    // Ambil IP pertama jika X-Forwarded-For berisi chain
+    if (str_contains($signerIp, ',')) {
+        $signerIp = trim(explode(',', $signerIp)[0]);
+    }
+
+    // Generate gambar QR code berisi URL verifikasi
+    $verifyUrl = BASE_URL . '/views/verify.php?token=' . $verifyToken;
+    $qrFileName = 'QR_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.png';
+    $qrFilePath = DIR_UPLOADS_SIGNATURES . $qrFileName;
+    OneSignPdfEngine::generateQrCode($verifyUrl, $qrFilePath);
+
     try {
         $pdo->beginTransaction();
 
-        // 1. Perbarui data document_signers
+        // 1. Perbarui data document_signers (termasuk token dan IP)
         $stmtUpdateSigner = $pdo->prepare("
             UPDATE document_signers 
             SET page_number = :page_num,
@@ -100,7 +117,9 @@ if ($action === 'approve') {
                 signature_type = 'canvas',
                 signature_image_path = :sig_path,
                 status = 'disetujui',
-                signed_at = NOW()
+                signed_at = NOW(),
+                verify_token = :verify_token,
+                signer_ip = :signer_ip
             WHERE id = :signer_entry_id
         ");
         $stmtUpdateSigner->execute([
@@ -110,10 +129,12 @@ if ($action === 'approve') {
             ':box_width'       => $boxWidth,
             ':box_height'      => $boxHeight,
             ':sig_path'        => $sigFilePath,
+            ':verify_token'    => $verifyToken,
+            ':signer_ip'       => $signerIp,
             ':signer_entry_id' => $docData['signer_entry_id']
         ]);
 
-        // 2. Lakukan injeksi tanda tangan fisik ke berkas PDF
+        // 2. Lakukan injeksi tanda tangan fisik dan QR code ke berkas PDF
         $safeSignedName   = 'SIGNED_' . basename($docData['file_path']);
         $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
 
@@ -128,7 +149,8 @@ if ($action === 'approve') {
             $boxHeight,
             $user['full_name'],
             $user['identifier_number'] ?? '',
-            date('d/m/Y')
+            date('d/m/Y'),
+            $qrFilePath
         );
 
         // 3. Perbarui status master dokumen dan path signed PDF
@@ -156,6 +178,11 @@ if ($action === 'approve') {
         ]);
 
         $pdo->commit();
+
+        // Hapus file QR sementara (sudah tertempel di PDF)
+        if (file_exists($qrFilePath)) {
+            unlink($qrFilePath);
+        }
 
         // 4. Catat aktivitas pengesahan ke Audit Trail
         writeAuditLog('SIGN_DOC', $docId, 'Mengesahkan dokumen pada halaman ' . $pageNum . ' di koordinat X:' . round($posX) . ', Y:' . round($posY));

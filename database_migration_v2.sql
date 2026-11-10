@@ -63,3 +63,9 @@ ON DUPLICATE KEY UPDATE
     description = VALUES(description),
     default_classification = VALUES(default_classification),
     icon_name = VALUES(icon_name);
+
+-- 6. Tambah kolom verifikasi keaslian tanda tangan (Fitur QR Verification)
+ALTER TABLE document_signers 
+ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64) NULL AFTER signed_at,
+ADD COLUMN IF NOT EXISTS signer_ip VARCHAR(45) NULL AFTER verify_token;
+
