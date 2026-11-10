@@ -47,18 +47,32 @@ $currentScript = basename($_SERVER['PHP_SELF']);
             <?php endif; ?>
 
             <?php if ($userRole === 'admin'): ?>
-                <!-- Riwayat & Arsip Berkas -->
+                <!-- 1. Riwayat & Arsip Berkas -->
                 <a href="<?= BASE_URL ?>/views/admin/dashboard.php" 
                    class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md transition-all <?= ($currentScript === 'dashboard.php') ? 'bg-primary text-on-primary shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' ?>">
                     <span class="material-symbols-outlined text-[20px]">folder_supervised</span>
                     <span>Riwayat &amp; Arsip Berkas</span>
                 </a>
 
-                <!-- Audit Trail & Security Log -->
+                <!-- 2. Audit Trail & Security Log -->
                 <a href="<?= BASE_URL ?>/views/admin/audit_trail.php" 
                    class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md transition-all <?= ($currentScript === 'audit_trail.php') ? 'bg-primary text-on-primary shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' ?>">
                     <span class="material-symbols-outlined text-[20px]">verified_user</span>
                     <span>Audit Trail &amp; Security Log</span>
+                </a>
+
+                <!-- 3. Manajemen Akun -->
+                <a href="<?= BASE_URL ?>/views/admin/users.php" 
+                   class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md transition-all <?= ($currentScript === 'users.php') ? 'bg-primary text-on-primary shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' ?>">
+                    <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+                    <span>Manajemen Akun</span>
+                </a>
+
+                <!-- 4. Master Data Dokumen -->
+                <a href="<?= BASE_URL ?>/views/admin/master_data.php" 
+                   class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-label-md text-label-md transition-all <?= ($currentScript === 'master_data.php') ? 'bg-primary text-on-primary shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' ?>">
+                    <span class="material-symbols-outlined text-[20px]">tune</span>
+                    <span>Master Data Dokumen</span>
                 </a>
             <?php endif; ?>
         </nav>

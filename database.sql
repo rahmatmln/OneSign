@@ -15,8 +15,36 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('pemohon', 'penandatangan', 'admin') NOT NULL,
     identifier_number VARCHAR(30) NULL,
     department VARCHAR(100) DEFAULT 'Teknik Informatika dan Komputer',
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
     saved_signature_path VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 1b. Tabel document_classifications (Klasifikasi Dokumen)
+CREATE TABLE IF NOT EXISTS document_classifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    badge_label VARCHAR(50) NOT NULL DEFAULT 'Khusus Sivitas',
+    description TEXT NULL,
+    verification_level VARCHAR(100) NOT NULL DEFAULT 'Level Verifikasi: Standar',
+    tier_code VARCHAR(20) NOT NULL DEFAULT 'TIER-1',
+    tier_level INT NOT NULL DEFAULT 1,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 1c. Tabel document_categories (Kategori Dokumen)
+CREATE TABLE IF NOT EXISTS document_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT NULL,
+    default_classification ENUM('publik', 'internal', 'rahasia') NOT NULL DEFAULT 'internal',
+    icon_name VARCHAR(50) NOT NULL DEFAULT 'description',
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 -- 2. Tabel documents

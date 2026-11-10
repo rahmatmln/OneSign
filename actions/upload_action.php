@@ -46,13 +46,13 @@ if (!in_array($confidentiality, $allowedConfidentiality, true)) {
 
 $pdo = Database::getConnection();
 
-// 3. Validasi Akun Penandatangan di Basis Data
-$stmtCheckSigner = $pdo->prepare("SELECT id, full_name FROM users WHERE id = :id AND role = 'penandatangan' LIMIT 1");
+// 3. Validasi Akun Penandatangan Aktif di Basis Data
+$stmtCheckSigner = $pdo->prepare("SELECT id, full_name FROM users WHERE id = :id AND role = 'penandatangan' AND is_active = 1 LIMIT 1");
 $stmtCheckSigner->execute([':id' => $signerId]);
 $signer = $stmtCheckSigner->fetch();
 
 if (!$signer) {
-    $_SESSION['upload_error'] = 'Dosen penandatangan yang dipilih tidak valid atau tidak terdaftar.';
+    $_SESSION['upload_error'] = 'Dosen penandatangan yang dipilih tidak valid, tidak aktif, atau tidak terdaftar.';
     header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
     exit;
 }
