@@ -1,0 +1,23 @@
+Setup:
+1. edit index.php
+// Jika dijalankan via PHP Built-in Server sebagai router, sajikan file langsung jika ada
+if (php_sapi_name() === 'cli-server') {
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if ($path !== '/' && file_exists(__DIR__ . $path) && !is_dir(__DIR__ . $path)) {
+        return false;
+    }
+}
+
+2. cd ~/onesign
+   curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+   chmod +x cloudflared
+
+3. cd ~/onesign
+   php -S 0.0.0.0:8000 index.php
+
+Start:
+1. buka terminal baru  
+./cloudflared tunnel 
+--url http://localhost:8000
+
+2. masukin url yang muncul ke config/constants.php, baris "BASE_URL..."

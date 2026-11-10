@@ -5,7 +5,7 @@
  */
 
 // URL Dasar Aplikasi di Localhost
-define('BASE_URL', 'http://localhost/onesign');
+define('BASE_URL', 'https://destiny-barrier-disturbed-regulation.trycloudflare.com');
 
 // Batasan Pengunggahan Berkas PDF (10 MB dalam bytes)
 define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024);
