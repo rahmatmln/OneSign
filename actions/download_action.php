@@ -17,7 +17,7 @@ if (!isAuthenticated()) {
 }
 
 $user  = getActiveUser();
-$docId = (int)($_GET['doc_id'] ?? 0);
+$docId = (int)($_GET['doc_id'] ?? $_GET['id'] ?? 0);
 
 if ($docId <= 0) {
     http_response_code(400);
@@ -32,7 +32,7 @@ $stmt = $pdo->prepare("
         d.id, d.title, d.category, d.confidentiality, d.original_filename, 
         d.file_path, d.signed_file_path, d.status, d.requester_id,
         ds.signer_id, ds.page_number, ds.pos_x, ds.pos_y, ds.box_width, ds.box_height, 
-        ds.signature_image_path, ds.signed_at,
+        ds.signature_image_path, ds.signed_at, ds.verify_token,
         u_sign.full_name AS signer_name, u_sign.identifier_number AS signer_nip
     FROM documents d
     LEFT JOIN document_signers ds ON d.id = ds.document_id
@@ -71,8 +71,28 @@ $signedPath = $doc['signed_file_path'];
 $safeSignedName = 'SIGNED_' . basename($doc['file_path']);
 $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
 
-// Selalu pastikan stempel TTD terinjeksi rapi bersama nama dan NIP dosen
-if (!empty($doc['signature_image_path']) && file_exists($doc['signature_image_path'])) {
+// Periksa keabsahan berkas bertanda tangan fisik yang ada
+$isSignedValid = false;
+if (!empty($signedPath) && file_exists($signedPath) && filesize($signedPath) > 0) {
+    try {
+        $tester = new OneSignPdfEngine('P', 'pt');
+        $tester->setSourceFile($signedPath);
+        $isSignedValid = true;
+    } catch (\Throwable $e) {
+        $isSignedValid = false;
+    }
+}
+
+// Jika file bertanda tangan belum ada di disk atau tidak valid, hasilkan ulang stempel lengkap beserta QR Code
+if (!$isSignedValid && !empty($doc['signature_image_path']) && file_exists($doc['signature_image_path'])) {
+    $qrFilePath = '';
+    if (!empty($doc['verify_token'])) {
+        $verifyUrl = BASE_URL . '/views/verify.php?token=' . $doc['verify_token'];
+        $qrFileName = 'QR_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.png';
+        $qrFilePath = DIR_UPLOADS_SIGNATURES . $qrFileName;
+        OneSignPdfEngine::generateQrCode($verifyUrl, $qrFilePath);
+    }
+
     $signedDateFormatted = !empty($doc['signed_at']) ? date('d/m/Y', strtotime($doc['signed_at'])) : date('d/m/Y');
     $stamped = OneSignPdfEngine::stampSignature(
         $doc['file_path'],
@@ -85,11 +105,23 @@ if (!empty($doc['signature_image_path']) && file_exists($doc['signature_image_pa
         (float)$doc['box_height'],
         $doc['signer_name'] ?? '',
         $doc['signer_nip'] ?? '',
-        $signedDateFormatted
+        $signedDateFormatted,
+        $qrFilePath
     );
+
+    if (!empty($qrFilePath) && file_exists($qrFilePath)) {
+        unlink($qrFilePath);
+    }
 
     if ($stamped) {
         $signedPath = $targetSignedPath;
+        // Simpan path hasil stempel yang valid ke database
+        try {
+            $stmtUpd = $pdo->prepare("UPDATE documents SET signed_file_path = :path WHERE id = :id");
+            $stmtUpd->execute([':path' => $targetSignedPath, ':id' => $docId]);
+        } catch (\Throwable $e) {
+            // Ignore DB update error if any
+        }
     }
 }
 

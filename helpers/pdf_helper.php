@@ -1,44 +1,71 @@
 <?php
 /**
- * OneSign - PDF Processing Engine (FPDI + FPDF Extension)
- * Menangani injeksi stempel tanda tangan (FR-02) dan penyematan Dynamic Security Watermarking (FR-04)
+ * OneSign - PDF Processing Engine
+ * Menggunakan FPDF dan FPDI untuk injeksi tanda tangan digital, QR Code, dan Dynamic Security Watermark
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use setasign\Fpdi\Fpdi;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\Output\QRGdImagePNG;
+use PdfDecompressor\Normalizer;
 
 class OneSignPdfEngine extends Fpdi {
     protected int $angle = 0;
     protected array $extgstates = [];
 
     /**
-     * Mengatur transparansi (alpha) untuk watermark
+     * Mengatur derajat rotasi untuk efek watermark diagonal
+     */
+    public function Rotate(int $angle, int|float $x = -1, int|float $y = -1): void {
+        if ($x == -1) $x = $this->x;
+        if ($y == -1) $y = $this->y;
+
+        if ($this->angle != 0) {
+            $this->_out('Q');
+        }
+
+        $this->angle = $angle;
+
+        if ($angle != 0) {
+            $angle *= M_PI / 180;
+            $c = cos($angle);
+            $s = sin($angle);
+            $cx = $x * $this->k;
+            $cy = ($this->h - $y) * $this->k;
+            $this->_out(sprintf('q %.5F %.5F %.5F %.5F %.2F %.2F cm 1 0 0 1 %.2F %.2F cm', $c, $s, -$s, $c, $cx, $cy, -$cx, -$cy));
+        }
+    }
+
+    /**
+     * Mengatur tingkat transparansi (alpha channel) elemen PDF secara dinamis
      */
     public function SetAlpha(float $alpha, string $bm = 'Normal'): void {
         $gs = $this->AddExtGState(['ca' => $alpha, 'CA' => $alpha, 'BM' => '/' . $bm]);
         $this->SetExtGState($gs);
     }
 
-    protected function AddExtGState(array $parms): int {
+    public function AddExtGState(array $parms): int {
         $n = count($this->extgstates) + 1;
         $this->extgstates[$n]['parms'] = $parms;
         return $n;
     }
 
-    protected function SetExtGState(int $gs): void {
+    public function SetExtGState(int $gs): void {
         $this->_out(sprintf('/GS%d gs', $gs));
     }
 
-    public function _enddoc() {
+    protected function _enddoc(): void {
         if (!empty($this->extgstates) && $this->PDFVersion < '1.4') {
             $this->PDFVersion = '1.4';
         }
         parent::_enddoc();
     }
 
-    protected function _putextgstates() {
+    protected function _putextgstates(): void {
         for ($i = 1; $i <= count($this->extgstates); $i++) {
             $this->_newobj();
             $this->extgstates[$i]['n'] = $this->n;
@@ -52,27 +79,38 @@ class OneSignPdfEngine extends Fpdi {
         }
     }
 
-    protected function _putresources() {
+    protected function _putresourcedict(): void {
+        parent::_putresourcedict();
+        if (!empty($this->extgstates)) {
+            $this->_put('/ExtGState <<');
+            foreach ($this->extgstates as $k => $extgstate) {
+                $this->_put('/GS' . $k . ' ' . $extgstate['n'] . ' 0 R');
+            }
+            $this->_put('>>');
+        }
+    }
+
+    protected function _putresources(): void {
         $this->_putextgstates();
         parent::_putresources();
     }
 
-    protected function _putresourcedict() {
-        parent::_putresourcedict();
-        $this->_put('/ExtGState <<');
-        foreach ($this->extgstates as $k => $extgstate) {
-            $this->_put('/GS' . $k . ' ' . $extgstate['n'] . ' 0 R');
-        }
-        $this->_put('>>');
+    public function RotatedText(int|float $x, int|float $y, string $txt, int $angle): void {
+        $this->Rotate($angle, $x, $y);
+        $this->Text($x, $y, $txt);
+        $this->Rotate(0);
     }
 
-    /**
-     * Memutar kanvas sebesar derajat tertentu pada titik pusat (x, y)
-     */
-    public function Rotate(int $angle, float $x = -1, float $y = -1): void {
+    public function _beginpage($orientation, $size, $rotation): void {
+        parent::_beginpage($orientation, $size, $rotation);
+        if ($this->angle != 0) {
+            $this->Rotate($this->angle);
+        }
+    }
+
+    public function RotatePage(int $angle, int|float $x = -1, int|float $y = -1): void {
         if ($x == -1) $x = $this->x;
         if ($y == -1) $y = $this->y;
-        if ($this->angle != 0) $this->_out('Q');
         $this->angle = $angle;
         if ($angle != 0) {
             $rad = $angle * M_PI / 180;
@@ -84,12 +122,60 @@ class OneSignPdfEngine extends Fpdi {
         }
     }
 
-    public function _endpage() {
+    public function _endpage(): void {
         if ($this->angle != 0) {
             $this->angle = 0;
             $this->_out('Q');
         }
         parent::_endpage();
+    }
+
+    /**
+     * Memastikan berkas PDF kompatibel dengan parser FPDI.
+     * Mengonversi berkas PDF 1.5+ (Cross-Reference Streams / Object Streams)
+     * menjadi struktur PDF standar agar dapat dibaca oleh FPDI tanpa error kompresi.
+     */
+    public static function prepareReadablePdf(string $sourcePath): string {
+        if (!file_exists($sourcePath) || filesize($sourcePath) === 0) {
+            return $sourcePath;
+        }
+
+        try {
+            if (class_exists(Normalizer::class)) {
+                $content = file_get_contents($sourcePath);
+                if (Normalizer::isCompressed($content)) {
+                    $normDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'onesign_norm';
+                    if (!is_dir($normDir)) {
+                        @mkdir($normDir, 0777, true);
+                    }
+                    $normalizedFile = $normDir . DIRECTORY_SEPARATOR . 'norm_' . md5($sourcePath . filemtime($sourcePath)) . '.pdf';
+                    if (!file_exists($normalizedFile) || filesize($normalizedFile) === 0) {
+                        $normalizer = new Normalizer();
+                        $normalizer->normalizeFile($sourcePath, $normalizedFile);
+                    }
+                    if (file_exists($normalizedFile) && filesize($normalizedFile) > 0) {
+                        return $normalizedFile;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log('PDF Normalizer notice: ' . $e->getMessage());
+        }
+
+        return $sourcePath;
+    }
+
+    /**
+     * Menghasilkan gambar QR code PNG dari sebuah URL
+     */
+    public static function generateQrCode(string $data, string $outputPath): void {
+        $options = new QROptions([
+            'outputInterface' => QRGdImagePNG::class,
+            'scale'           => 6,
+            'outputBase64'    => false,
+            'quietzoneSize'   => 2,
+        ]);
+        (new QRCode($options))->render($data, $outputPath);
     }
 
     /**
@@ -106,11 +192,15 @@ class OneSignPdfEngine extends Fpdi {
         float $boxHeight,
         string $signerName = '',
         string $signerNip = '',
-        string $signedDate = ''
+        string $signedDate = '',
+        string $qrImagePath = ''
     ): bool {
         try {
+            $cleanSource = self::prepareReadablePdf($sourcePdfPath);
+
             $pdf = new self('P', 'pt'); // Satuan Points (72 DPI) sesuai PDF.js
-            $pageCount = $pdf->setSourceFile($sourcePdfPath);
+            $pdf->SetAutoPageBreak(false); // Cegah FPDF membuat halaman baru otomatis saat stempel di dekat batas bawah
+            $pageCount = $pdf->setSourceFile($cleanSource);
 
             for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
                 $tplId = $pdf->importPage($pageNum);
@@ -120,52 +210,77 @@ class OneSignPdfEngine extends Fpdi {
                 $pdf->useTemplate($tplId);
 
                 // Suntikkan gambar TTD dan identitas penandatangan jika ini adalah halaman target
-                if ($pageNum === $targetPage && file_exists($sigImagePath)) {
-                    // Beri batas aman agar tidak keluar halaman
+                if ($pageNum === $targetPage) {
                     $safeX = max(10, min($posX, $size['width'] - $boxWidth - 10));
                     $safeY = max(10, min($posY, $size['height'] - $boxHeight - 10));
 
-                    // Tinggi porsi gambar goresan tanda tangan (sekitar 62% dari total kotak)
-                    $imgHeight = $boxHeight * 0.62;
-                    $pdf->Image($sigImagePath, $safeX, $safeY, $boxWidth, $imgHeight, 'PNG');
+                    $scaleFactor = $boxWidth / 170.0;
+                    $sigHeight = $boxHeight * 0.58;
 
-                    // Skala pengali proporsional relatif terhadap ukuran standar (170 pt)
-                    $scaleFactor = max(0.7, min(3.0, $boxWidth / 170.0));
-
-                    // Garis pembatas tipis di bawah tanda tangan
-                    $lineY = $safeY + $imgHeight + (2 * $scaleFactor);
-                    $pdf->SetDrawColor(180, 195, 220);
-                    $pdf->SetLineWidth(0.5 * $scaleFactor);
-                    $pdf->Line($safeX, $lineY, $safeX + $boxWidth, $lineY);
-
-                    // Cetak Nama Lengkap Penandatangan (Skala font dan posisi dinamis)
-                    if (!empty($signerName)) {
-                        $nameFontSize = max(7, round(8.5 * $scaleFactor, 1));
-                        $pdf->SetFont('Helvetica', 'B', $nameFontSize);
-                        $pdf->SetTextColor(30, 58, 138); // Biru tua institusi
-                        $pdf->SetXY($safeX, $lineY + (1.5 * $scaleFactor));
-                        $pdf->Cell($boxWidth, 9 * $scaleFactor, $signerName, 0, 1, 'C');
+                    // 1. Gambar Tanda Tangan
+                    if (!empty($sigImagePath) && file_exists($sigImagePath)) {
+                        $pdf->Image(
+                            $sigImagePath,
+                            $safeX + (10 * $scaleFactor),
+                            $safeY + (2 * $scaleFactor),
+                            $boxWidth - (20 * $scaleFactor),
+                            $sigHeight,
+                            'PNG'
+                        );
                     }
 
-                    // Cetak NIP dan Keterangan Keabsahan (Skala font dinamis)
-                    $infoParts = [];
-                    if (!empty($signerNip)) {
-                        $infoParts[] = 'NIP. ' . $signerNip;
-                    }
-                    $infoParts[] = 'TTE Sah: ' . (!empty($signedDate) ? $signedDate : date('d/m/Y'));
-                    $infoText = implode(' | ', $infoParts);
+                    // 2. Garis Bawah Pembatas Tanda Tangan
+                    $lineY = $safeY + $sigHeight + (2 * $scaleFactor);
+                    $pdf->SetDrawColor(15, 23, 42); // Navy tua
+                    $pdf->SetLineWidth(0.75 * $scaleFactor);
+                    $pdf->Line(
+                        $safeX + (5 * $scaleFactor),
+                        $lineY,
+                        $safeX + $boxWidth - (5 * $scaleFactor),
+                        $lineY
+                    );
 
-                    $subFontSize = max(6, round(7 * $scaleFactor, 1));
-                    $pdf->SetFont('Helvetica', '', $subFontSize);
+                    // 3. Nama Terang & Gelar Penandatangan
+                    $fontSizeName = max(6.5, min(10.0, 9.0 * $scaleFactor));
+                    $pdf->SetFont('Helvetica', 'B', $fontSizeName);
+                    $pdf->SetTextColor(15, 23, 42);
+                    $pdf->SetXY($safeX, $lineY + (1.5 * $scaleFactor));
+                    $pdf->Cell($boxWidth, 9 * $scaleFactor, $signerName, 0, 1, 'C');
+
+                    // 4. NIP dan Tanggal Pengesahan
+                    $fontSizeInfo = max(5.5, min(8.0, 7.5 * $scaleFactor));
+                    $pdf->SetFont('Helvetica', '', $fontSizeInfo);
+                    $infoText = (!empty($signerNip) ? 'NIP. ' . $signerNip : '') . ' • ' . $signedDate;
                     $pdf->SetTextColor(71, 85, 105); // Slate
                     $pdf->SetXY($safeX, $lineY + (1.5 * $scaleFactor) + (8.5 * $scaleFactor));
                     $pdf->Cell($boxWidth, 8 * $scaleFactor, $infoText, 0, 1, 'C');
+
+                    // 5. Tempelkan QR code verifikasi di samping tanda tangan
+                    if (!empty($qrImagePath) && file_exists($qrImagePath)) {
+                        $qrSize = max(35, min(65, $boxHeight * 0.55));
+                        $qrX = $safeX + $boxWidth + (6 * $scaleFactor);
+                        $qrY = max(10, min($safeY + ($boxHeight - $qrSize) / 2, $size['height'] - $qrSize - 15));
+
+                        // Jika QR melewati batas kanan halaman, tempatkan di sebelah kiri tanda tangan
+                        if ($qrX + $qrSize > $size['width'] - 10) {
+                            $qrX = max(10, $safeX - $qrSize - (6 * $scaleFactor));
+                        }
+
+                        $pdf->Image($qrImagePath, $qrX, $qrY, $qrSize, $qrSize, 'PNG');
+
+                        // Label kecil di bawah QR
+                        $qrLabelSize = max(5, round(5.5 * $scaleFactor, 1));
+                        $pdf->SetFont('Helvetica', '', $qrLabelSize);
+                        $pdf->SetTextColor(100, 116, 139);
+                        $pdf->SetXY($qrX, $qrY + $qrSize + 1);
+                        $pdf->Cell($qrSize, 6 * $scaleFactor, 'Scan Verifikasi', 0, 0, 'C');
+                    }
                 }
             }
 
             $pdf->Output('F', $outputSignedPath);
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             error_log('Gagal menginjeksi tanda tangan ke PDF: ' . $e->getMessage());
             return false;
         }
@@ -181,8 +296,11 @@ class OneSignPdfEngine extends Fpdi {
         string $downloadFilename
     ): void {
         try {
+            $cleanPdfPath = self::prepareReadablePdf($pdfPath);
+
             $pdf = new self('P', 'pt');
-            $pageCount = $pdf->setSourceFile($pdfPath);
+            $pdf->SetAutoPageBreak(false);
+            $pageCount = $pdf->setSourceFile($cleanPdfPath);
 
             $labelKerahasiaan = strtoupper($docData['confidentiality'] ?? 'INTERNAL');
             $namaPengunduh    = $userData['full_name'] ?? 'PENGGUNA';
@@ -250,10 +368,9 @@ class OneSignPdfEngine extends Fpdi {
             $pdf->Output('I', $downloadFilename);
             exit;
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             error_log('Gagal menyematkan watermark: ' . $e->getMessage());
-            die('Gagal menghasilkan berkas ber-watermark. Silakan coba kembali.');
+            die('Gagal menghasilkan berkas ber-watermark: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
         }
     }
 }
-

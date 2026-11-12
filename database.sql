@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS document_signers (
     status ENUM('menunggu', 'disetujui', 'ditolak') NOT NULL DEFAULT 'menunggu',
     rejection_note TEXT NULL,
     signed_at DATETIME NULL,
+    verify_token VARCHAR(64) NULL,
+    signer_ip VARCHAR(45) NULL,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE,
     FOREIGN KEY (signer_id) REFERENCES users(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
@@ -115,6 +117,7 @@ CREATE INDEX idx_doc_requester ON documents(requester_id);
 CREATE INDEX idx_doc_status ON documents(status);
 CREATE INDEX idx_signer_status ON document_signers(signer_id, status);
 CREATE INDEX idx_audit_created ON audit_logs(created_at);
+CREATE INDEX idx_verify_token ON document_signers(verify_token);
 
 -- =======================================================
 -- SEED DATA PENGGUNA DEMO

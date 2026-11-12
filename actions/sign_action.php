@@ -1,7 +1,8 @@
 <?php
 /**
  * OneSign - Sign Action Handler
- * Memproses persetujuan (pembubuhan TTE) dan penolakan dokumen oleh Dosen
+ * Memproses persetujuan (pembubuhan TTE & QR Code verifikasi) dan penolakan dokumen oleh Dosen
+ * REVISI TERPADU: Posisi TTD ditentukan pemohon; verifikasi keaslian via QR Code (Stitch Institutional Modernism)
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
@@ -33,9 +34,11 @@ if ($docId <= 0) {
 
 $pdo = Database::getConnection();
 
-// Mengambil data dokumen dan memastikan penugasan penandatangan valid
+// Mengambil data dokumen (termasuk posisi TTD pilihan pemohon) dan memastikan penugasan valid
 $stmtCheck = $pdo->prepare("
-    SELECT d.id, d.title, d.file_path, d.original_filename, d.requester_id, ds.id AS signer_entry_id, ds.status AS sign_status
+    SELECT d.id, d.title, d.file_path, d.original_filename, d.requester_id,
+           ds.id AS signer_entry_id, ds.status AS sign_status,
+           ds.page_number, ds.pos_x, ds.pos_y, ds.box_width, ds.box_height
     FROM documents d
     JOIN document_signers ds ON d.id = ds.document_id
     WHERE d.id = :doc_id AND ds.signer_id = :signer_id
@@ -59,11 +62,12 @@ if ($docData['sign_status'] !== 'menunggu') {
 // KASUS A: PERSETUJUAN DOKUMEN (APPROVE)
 // ==========================================
 if ($action === 'approve') {
-    $pageNum   = max(1, (int)($_POST['page_number'] ?? 1));
-    $posX      = (float)($_POST['pos_x'] ?? 0);
-    $posY      = (float)($_POST['pos_y'] ?? 0);
-    $boxWidth  = (float)($_POST['box_width'] ?? 170);
-    $boxHeight = (float)($_POST['box_height'] ?? 80);
+    // Posisi TTD diambil dari penentuan pemohon pada database
+    $pageNum   = max(1, (int)($docData['page_number'] ?: 1));
+    $posX      = (float)$docData['pos_x'];
+    $posY      = (float)$docData['pos_y'];
+    $boxWidth  = (float)($docData['box_width'] ?: 170);
+    $boxHeight = (float)($docData['box_height'] ?: 80);
     $sigData   = $_POST['signature_data'] ?? '';
 
     if (empty($sigData)) {
@@ -86,34 +90,44 @@ if ($action === 'approve') {
     $sigFilePath = DIR_UPLOADS_SIGNATURES . $sigFileName;
     file_put_contents($sigFilePath, $data);
 
+    // Generate token verifikasi dan tangkap IP penandatangan
+    $verifyToken = bin2hex(random_bytes(16));
+    $signerIp = $_SERVER['HTTP_CF_CONNECTING_IP']
+        ?? $_SERVER['HTTP_X_FORWARDED_FOR']
+        ?? $_SERVER['REMOTE_ADDR']
+        ?? '127.0.0.1';
+    if (str_contains($signerIp, ',')) {
+        $signerIp = trim(explode(',', $signerIp)[0]);
+    }
+
+    // Generate gambar QR code verifikasi
+    $verifyUrl = BASE_URL . '/views/verify.php?token=' . $verifyToken;
+    $qrFileName = 'QR_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.png';
+    $qrFilePath = DIR_UPLOADS_SIGNATURES . $qrFileName;
+    OneSignPdfEngine::generateQrCode($verifyUrl, $qrFilePath);
+
     try {
         $pdo->beginTransaction();
 
-        // 1. Perbarui data document_signers
+        // 1. Perbarui data document_signers dengan status disetujui, token, dan IP
         $stmtUpdateSigner = $pdo->prepare("
             UPDATE document_signers 
-            SET page_number = :page_num,
-                pos_x = :pos_x,
-                pos_y = :pos_y,
-                box_width = :box_width,
-                box_height = :box_height,
-                signature_type = 'canvas',
+            SET signature_type = 'canvas',
                 signature_image_path = :sig_path,
                 status = 'disetujui',
-                signed_at = NOW()
+                signed_at = NOW(),
+                verify_token = :verify_token,
+                signer_ip = :signer_ip
             WHERE id = :signer_entry_id
         ");
         $stmtUpdateSigner->execute([
-            ':page_num'        => $pageNum,
-            ':pos_x'           => $posX,
-            ':pos_y'           => $posY,
-            ':box_width'       => $boxWidth,
-            ':box_height'      => $boxHeight,
             ':sig_path'        => $sigFilePath,
+            ':verify_token'    => $verifyToken,
+            ':signer_ip'       => $signerIp,
             ':signer_entry_id' => $docData['signer_entry_id']
         ]);
 
-        // 2. Lakukan injeksi tanda tangan fisik ke berkas PDF
+        // 2. Lakukan injeksi tanda tangan fisik & QR code ke berkas PDF
         $safeSignedName   = 'SIGNED_' . basename($docData['file_path']);
         $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
 
@@ -128,7 +142,8 @@ if ($action === 'approve') {
             $boxHeight,
             $user['full_name'],
             $user['identifier_number'] ?? '',
-            date('d/m/Y')
+            date('d/m/Y'),
+            $qrFilePath
         );
 
         // 3. Perbarui status master dokumen dan path signed PDF
@@ -157,8 +172,13 @@ if ($action === 'approve') {
 
         $pdo->commit();
 
-        // 4. Catat aktivitas pengesahan ke Audit Trail
-        writeAuditLog('SIGN_DOC', $docId, 'Mengesahkan dokumen pada halaman ' . $pageNum . ' di koordinat X:' . round($posX) . ', Y:' . round($posY));
+        // Bersihkan berkas QR sementara
+        if (file_exists($qrFilePath)) {
+            unlink($qrFilePath);
+        }
+
+        // 5. Catat aktivitas pengesahan ke Audit Trail
+        writeAuditLog('SIGN_DOC', $docId, 'Mengesahkan dokumen pada halaman ' . $pageNum . ' di koordinat X:' . round($posX) . ', Y:' . round($posY) . ' (QR Verifikasi terinjeksi)');
 
         header('Location: ' . BASE_URL . '/views/penandatangan/dashboard.php?sign_success=1');
         exit;
@@ -167,8 +187,11 @@ if ($action === 'approve') {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
+        if (file_exists($qrFilePath)) {
+            unlink($qrFilePath);
+        }
         error_log('Gagal mengesahkan dokumen: ' . $e->getMessage());
-        die('Terjadi kesalahan basis data saat mengesahkan dokumen.');
+        die('Terjadi kesalahan basis data saat mengesahkan dokumen: ' . $e->getMessage());
     }
 }
 

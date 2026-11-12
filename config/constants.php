@@ -12,6 +12,7 @@ define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024);
 
 // Direktori Penyimpanan Berkas
 define('DIR_UPLOADS_ORIGINAL', __DIR__ . '/../uploads/originals/');
+define('DIR_UPLOADS_DOCUMENTS', DIR_UPLOADS_ORIGINAL); // Alias kompatibilitas
 define('DIR_UPLOADS_SIGNED', __DIR__ . '/../uploads/signed/');
 define('DIR_UPLOADS_SIGNATURES', __DIR__ . '/../uploads/signatures/');
 

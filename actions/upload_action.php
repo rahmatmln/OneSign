@@ -2,6 +2,7 @@
 /**
  * OneSign - Upload Action Handler
  * Memproses pengunggahan berkas PDF dan pendaftaran antrean penandatangan
+ * REVISI: Posisi tanda tangan ditentukan oleh pemohon saat pengajuan berkas
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
@@ -44,6 +45,19 @@ if (!in_array($confidentiality, $allowedConfidentiality, true)) {
     $confidentiality = 'internal';
 }
 
+// 2b. Posisi tanda tangan yang ditentukan oleh pemohon
+$pageNum   = max(1, (int)($_POST['page_number'] ?? 1));
+$posX      = (float)($_POST['pos_x'] ?? -1);
+$posY      = (float)($_POST['pos_y'] ?? -1);
+$boxWidth  = (float)($_POST['box_width'] ?? 0);
+$boxHeight = (float)($_POST['box_height'] ?? 0);
+
+if ($posX < 0 || $posY < 0 || $boxWidth < 50 || $boxHeight < 20) {
+    $_SESSION['upload_error'] = 'Posisi tanda tangan belum ditentukan. Silakan atur posisi pada pratinjau dokumen.';
+    header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
+    exit;
+}
+
 $pdo = Database::getConnection();
 
 // 3. Validasi Akun Penandatangan Aktif di Basis Data
@@ -75,34 +89,48 @@ if ($fileSize > MAX_UPLOAD_SIZE) {
     exit;
 }
 
-// Cek Ekstensi Berkas
-$fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-if ($fileExtension !== 'pdf') {
-    $_SESSION['upload_error'] = 'Format berkas tidak didukung. Sistem hanya menerima berkas berekstensi .pdf.';
+// Validasi Ekstensi dan MIME Type Asli PDF
+$fileExt = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+if ($fileExt !== 'pdf') {
+    $_SESSION['upload_error'] = 'Format berkas tidak diizinkan. Hanya berkas berekstensi .pdf yang diperbolehkan.';
     header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
     exit;
 }
 
-// Cek MIME Type menggunakan Fileinfo
-$finfo    = new finfo(FILEINFO_MIME_TYPE);
-$mimeType = $finfo->file($fileTmpPath);
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mimeType = finfo_file($finfo, $fileTmpPath);
+finfo_close($finfo);
+
 if ($mimeType !== 'application/pdf') {
-    $_SESSION['upload_error'] = 'Tipe berkas tidak valid. Berkas harus berformat MIME application/pdf.';
+    $_SESSION['upload_error'] = 'Format konten berkas tidak valid sebagai berkas PDF murni.';
     header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
     exit;
 }
 
-// 5. Pindahkan Berkas ke Direktori Penyimpanan Server dengan Nama Unik
-$safeFileName = 'DOC_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.pdf';
-$targetPath   = DIR_UPLOADS_ORIGINAL . $safeFileName;
+// Periksa Magic Bytes PDF (%PDF-)
+$handle = fopen($fileTmpPath, 'rb');
+$headerBytes = fread($handle, 5);
+fclose($handle);
+
+if (strpos($headerBytes, '%PDF-') !== 0) {
+    $_SESSION['upload_error'] = 'Struktur berkas PDF rusak atau dimanipulasi.';
+    header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
+    exit;
+}
+
+// 5. Simpan Berkas Fisik ke Direktori uploads/originals/
+$safePrefix = date('Ymd_His') . '_' . bin2hex(random_bytes(6));
+$cleanFileName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $originalName);
+$storedFileName = $safePrefix . '_' . $cleanFileName;
+$targetPath = DIR_UPLOADS_ORIGINAL . $storedFileName;
 
 if (!move_uploaded_file($fileTmpPath, $targetPath)) {
-    $_SESSION['upload_error'] = 'Gagal menyimpan berkas ke repositori penyimpanan server.';
+    $_SESSION['upload_error'] = 'Terjadi kesalahan sistem saat menyimpan berkas ke server penyimpanan.';
     header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
     exit;
 }
 
-// 6. Simpan Metadata ke Basis Data Menggunakan Transaksi
+// 6. Transaksi Database Penyimpanan Metadata & Penugasan
 try {
     $pdo->beginTransaction();
 
@@ -122,14 +150,19 @@ try {
     ]);
     $docId = (int)$pdo->lastInsertId();
 
-    // Simpan ke tabel document_signers dengan koordinat awal default
+    // Simpan ke document_signers dengan posisi TTD pilihan pemohon
     $stmtSigner = $pdo->prepare("
         INSERT INTO document_signers (document_id, signer_id, page_number, pos_x, pos_y, box_width, box_height, status)
-        VALUES (:document_id, :signer_id, 1, 380, 510, 170, 80, 'menunggu')
+        VALUES (:document_id, :signer_id, :page_number, :pos_x, :pos_y, :box_width, :box_height, 'menunggu')
     ");
     $stmtSigner->execute([
         ':document_id' => $docId,
-        ':signer_id'   => $signerId
+        ':signer_id'   => $signerId,
+        ':page_number' => $pageNum,
+        ':pos_x'       => $posX,
+        ':pos_y'       => $posY,
+        ':box_width'   => $boxWidth,
+        ':box_height'  => $boxHeight
     ]);
 
     // Kirim notifikasi in-app ke penandatangan
@@ -149,7 +182,7 @@ try {
     $pdo->commit();
 
     // 7. Catat ke Audit Log
-    writeAuditLog('UPLOAD_DOC', $docId, 'Mengunggah naskah PDF: ' . $originalName . ' untuk ditandatangani oleh ' . $signer['full_name']);
+    writeAuditLog('UPLOAD_DOC', $docId, 'Mengunggah naskah PDF: ' . $originalName . ' untuk ditandatangani oleh ' . $signer['full_name'] . ' (posisi TTD: hal. ' . $pageNum . ', X:' . round($posX) . ', Y:' . round($posY) . ')');
 
     // Arahkan ke dashboard dengan pesan sukses
     header('Location: ' . BASE_URL . '/views/pemohon/dashboard.php?upload_success=1');
