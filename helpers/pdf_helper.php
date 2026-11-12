@@ -11,6 +11,7 @@ use setasign\Fpdi\Fpdi;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use chillerlan\QRCode\Output\QRGdImagePNG;
+use chillerlan\QRCode\Data\QRMatrix;
 
 class OneSignPdfEngine extends Fpdi {
     protected int $angle = 0;
@@ -101,11 +102,22 @@ class OneSignPdfEngine extends Fpdi {
     public static function generateQrCode(string $data, string $outputPath): void {
         $options = new QROptions([
             'outputInterface' => QRGdImagePNG::class,
-            'scale'           => 6,
+            'scale'           => 8,
             'outputBase64'    => false,
-            'quietzoneSize'   => 2,
+            'quietzoneSize'   => 1,
+            'moduleValues'    => [
+                QRMatrix::M_DARKMODULE       => [0, 35, 111],
+                QRMatrix::M_DATA_DARK        => [0, 35, 111],
+                QRMatrix::M_FINDER_DARK      => [0, 35, 111],
+                QRMatrix::M_ALIGNMENT_DARK   => [0, 35, 111],
+                QRMatrix::M_TIMING_DARK      => [0, 35, 111],
+                QRMatrix::M_FORMAT_DARK      => [0, 35, 111],
+                QRMatrix::M_VERSION_DARK     => [0, 35, 111],
+                QRMatrix::M_FINDER_DOT       => [0, 35, 111],
+            ],
         ]);
-        (new QRCode($options))->render($data, $outputPath);
+        $qrData = (new QRCode($options))->render($data);
+        file_put_contents($outputPath, $qrData);
     }
 
     /**
@@ -179,25 +191,53 @@ class OneSignPdfEngine extends Fpdi {
                     $pdf->SetXY($safeX, $lineY + (1.5 * $scaleFactor) + (8.5 * $scaleFactor));
                     $pdf->Cell($boxWidth, 8 * $scaleFactor, $infoText, 0, 1, 'C');
 
-                    // Tempelkan QR code verifikasi di samping tanda tangan
+                    // Tempelkan QR code verifikasi di samping tanda tangan (tinggi presisi sesuai batas tanda tangan)
                     if (!empty($qrImagePath) && file_exists($qrImagePath)) {
-                        $qrSize = max(35, min(65, $boxHeight * 0.55));
-                        $qrX = $safeX + $boxWidth + (6 * $scaleFactor);
-                        $qrY = max(10, min($safeY + ($boxHeight - $qrSize) / 2, $size['height'] - $qrSize - 15));
+                        $qrGap = 6 * $scaleFactor;
+
+                        // Batas vertikal tanda tangan sebenarnya: dari titik atas ($safeY) hingga dasar teks NIP
+                        $sigTopY = $safeY;
+                        $sigBottomY = $lineY + (18 * $scaleFactor); // Garis bawah teks NIP
+                        $sigTotalHeight = $sigBottomY - $sigTopY;
+
+                        // Kunci tinggi card QR agar berada tepat di dalam batas garis atas dan bawah tanda tangan
+                        $cardHeight = $sigTotalHeight - (1.0 * $scaleFactor);
+                        $qrY = $sigTopY + (0.5 * $scaleFactor);
+
+                        $pad = 2 * $scaleFactor;
+                        $labelH = 6 * $scaleFactor;
+                        $sepGap = 1.5 * $scaleFactor;
+                        $qrImgSize = max(25, $cardHeight - (2 * $pad) - $sepGap - $labelH);
+                        $cardWidth = $qrImgSize + (2 * $pad);
+
+                        $qrX = $safeX + $boxWidth + $qrGap;
 
                         // Jika QR melewati batas kanan halaman, tempatkan di sebelah kiri tanda tangan
-                        if ($qrX + $qrSize > $size['width'] - 10) {
-                            $qrX = max(10, $safeX - $qrSize - (6 * $scaleFactor));
+                        if ($qrX + $cardWidth > $size['width'] - 10) {
+                            $qrX = max(10, $safeX - $cardWidth - $qrGap);
                         }
 
-                        $pdf->Image($qrImagePath, $qrX, $qrY, $qrSize, $qrSize, 'PNG');
+                        // Container card QR berbingkai senada dengan pembatas tanda tangan
+                        $pdf->SetDrawColor(180, 195, 220);
+                        $pdf->SetFillColor(255, 255, 255);
+                        $pdf->SetLineWidth(0.5 * $scaleFactor);
+                        $pdf->Rect($qrX, $qrY, $cardWidth, $cardHeight, 'DF');
 
-                        // Label kecil di bawah QR
-                        $qrLabelSize = max(5, round(5.5 * $scaleFactor, 1));
-                        $pdf->SetFont('Helvetica', '', $qrLabelSize);
-                        $pdf->SetTextColor(100, 116, 139);
-                        $pdf->SetXY($qrX, $qrY + $qrSize + 1);
-                        $pdf->Cell($qrSize, 6 * $scaleFactor, 'Scan Verifikasi', 0, 0, 'C');
+                        // Gambar QR Code di dalam card
+                        $qrImgX = $qrX + $pad;
+                        $qrImgY = $qrY + $pad;
+                        $pdf->Image($qrImagePath, $qrImgX, $qrImgY, $qrImgSize, $qrImgSize, 'PNG');
+
+                        // Garis pemisah tipis di bawah QR sebelum label
+                        $qrLineY = $qrImgY + $qrImgSize + ($sepGap / 2);
+                        $pdf->Line($qrX, $qrLineY, $qrX + $cardWidth, $qrLineY);
+
+                        // Label teks verifikasi senada dengan gaya teks penandatangan
+                        $qrLabelSize = max(4.5, round(5.5 * $scaleFactor, 1));
+                        $pdf->SetFont('Helvetica', 'B', $qrLabelSize);
+                        $pdf->SetTextColor(30, 58, 138); // Biru tua institusi
+                        $pdf->SetXY($qrX, $qrLineY + (0.5 * $scaleFactor));
+                        $pdf->Cell($cardWidth, $labelH, 'Scan Verifikasi', 0, 0, 'C');
                     }
                 }
             }

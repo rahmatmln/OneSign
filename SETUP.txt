@@ -1,23 +1,31 @@
 Setup:
-1. edit index.php
-// Jika dijalankan via PHP Built-in Server sebagai router, sajikan file langsung jika ada
-if (php_sapi_name() === 'cli-server') {
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    if ($path !== '/' && file_exists(__DIR__ . $path) && !is_dir(__DIR__ . $path)) {
-        return false;
-    }
-}
+1. Jalankan composer install untuk download depedensi QR
 
-2. cd ~/onesign
-   curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
-   chmod +x cloudflared
+2. tambah di database:
+ALTER TABLE document_signers 
+ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64) NULL AFTER signed_at,
+ADD COLUMN IF NOT EXISTS signer_ip VARCHAR(45) NULL AFTER verify_token;
 
-3. cd ~/onesign
+2. Install cloudflare
+    // Windows
+    cd /onesign
+    curl.exe -L -o cloudflared.exe https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
+
+    // Linux
+    cd /onesign
+    curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+    chmod +x cloudflared
+
+
+3. cd /onesign
    php -S 0.0.0.0:8000 index.php
 
 Start:
-1. buka terminal baru  
-./cloudflared tunnel 
---url http://localhost:8000
+1. buka terminal baru jalankan:
 
-2. masukin url yang muncul ke config/constants.php, baris "BASE_URL..."
+    cd /onesign
+    .\cloudflared.exe tunnel --url http://localhost:8000
+
+2. Masukan URL yang muncul ke config/constants.php, baris "BASE_URL..."
+
+3. Buka URL di browser

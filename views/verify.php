@@ -133,19 +133,29 @@ if (!empty($token) && preg_match('/^[a-f0-9]{32}$/', $token)) {
             
             <div class="font-label-sm text-label-sm text-secondary uppercase tracking-wider">Detail Penandatangan</div>
 
+            <!-- NIP -->
+            <div class="flex items-start gap-3">
+                <span class="material-symbols-outlined text-primary text-[20px] mt-0.5 flex-shrink-0">badge</span>
+                <div class="min-w-0">
+                    <div class="font-label-sm text-label-sm text-secondary">Nomor Induk Pegawai (NIP)</div>
+                    <div class="font-body-md text-on-surface break-all"><?= !empty($verifyData['signer_nip']) ? htmlspecialchars($verifyData['signer_nip']) : '-' ?></div>
+                </div>
+            </div>
+
+            <hr class="border-surface-container-high">
+
             <!-- Nama -->
             <div class="flex items-start gap-3">
                 <span class="material-symbols-outlined text-primary text-[20px] mt-0.5 flex-shrink-0">person</span>
                 <div class="min-w-0">
                     <div class="font-label-sm text-label-sm text-secondary">Nama Penandatangan</div>
                     <div class="font-headline-sm text-headline-sm text-on-surface break-words"><?= htmlspecialchars($verifyData['signer_name']) ?></div>
-                    <?php if (!empty($verifyData['signer_nip'])): ?>
-                        <div class="font-body-sm text-body-sm text-secondary">NIP. <?= htmlspecialchars($verifyData['signer_nip']) ?></div>
-                    <?php endif; ?>
                 </div>
             </div>
 
             <hr class="border-surface-container-high">
+
+
 
             <!-- Email -->
             <div class="flex items-start gap-3">
