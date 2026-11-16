@@ -188,7 +188,7 @@ require_once __DIR__ . '/../layouts/header.php';
 
     <!-- Document Data Table -->
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse min-w-[950px]">
+        <table class="w-full text-left border-collapse min-w-[1020px]">
             <thead>
                 <tr class="bg-surface-container-low text-secondary font-label-sm text-label-sm uppercase tracking-wider border-b border-outline-variant/20">
                     <th class="py-space-sm px-space-md font-semibold">Nama Berkas</th>
@@ -296,24 +296,34 @@ require_once __DIR__ . '/../layouts/header.php';
 
                             <!-- Tindakan -->
                             <td class="py-3 px-space-md text-right whitespace-nowrap">
-                                <?php if ($doc['status'] === 'disetujui'): ?>
-                                    <a href="<?= BASE_URL ?>/actions/download_action.php?doc_id=<?= $doc['id'] ?>" 
-                                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm shadow-sm hover:bg-primary-container transition-colors">
-                                        <span class="material-symbols-outlined text-[16px]">download</span>
-                                        <span>Unduh Dokumen</span>
+                                <div class="inline-flex items-center justify-end gap-1.5">
+                                    <a href="<?= BASE_URL ?>/actions/preview_action.php?doc_id=<?= $doc['id'] ?>" 
+                                       target="_blank"
+                                       class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-sm text-label-sm font-semibold rounded-lg border border-outline-variant/30 shadow-xs transition-all whitespace-nowrap"
+                                       title="Buka Pratinjau Dokumen">
+                                        <span class="material-symbols-outlined text-[16px]">visibility</span>
+                                        <span>Preview</span>
                                     </a>
-                                <?php elseif ($doc['status'] === 'menunggu'): ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container text-primary font-label-sm text-label-sm font-semibold cursor-default">
-                                        <span class="material-symbols-outlined text-[16px]">notifications_active</span>
-                                        <span>Dalam Antrean</span>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-800 font-label-sm text-label-sm font-semibold" 
-                                          title="<?= htmlspecialchars($doc['rejection_note'] ?? 'Perlu perbaikan', ENT_QUOTES, 'UTF-8') ?>">
-                                        <span class="material-symbols-outlined text-[16px]">info</span>
-                                        <span>Lihat Alasan</span>
-                                    </span>
-                                <?php endif; ?>
+                                    <?php if ($doc['status'] === 'disetujui'): ?>
+                                        <a href="<?= BASE_URL ?>/actions/download_action.php?doc_id=<?= $doc['id'] ?>" 
+                                           class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-label-sm text-label-sm font-semibold shadow-xs transition-colors whitespace-nowrap"
+                                           title="Unduh Berkas PDF Sah">
+                                            <span class="material-symbols-outlined text-[16px]">download</span>
+                                            <span>Unduh</span>
+                                        </a>
+                                    <?php elseif ($doc['status'] === 'menunggu'): ?>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container text-secondary/60 font-label-sm text-label-sm font-medium whitespace-nowrap" title="Menunggu TTE Dosen">
+                                            <span class="material-symbols-outlined text-[14px]">lock</span>
+                                            <span>Unduh</span>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-800 font-label-sm text-label-sm font-semibold whitespace-nowrap" 
+                                              title="<?= htmlspecialchars($doc['rejection_note'] ?? 'Perlu perbaikan', ENT_QUOTES, 'UTF-8') ?>">
+                                            <span class="material-symbols-outlined text-[16px]">info</span>
+                                            <span>Alasan</span>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

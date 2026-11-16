@@ -180,15 +180,15 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
     <?php else: ?>
         <div class="overflow-x-auto w-full">
-            <table class="w-full text-left border-collapse min-w-[900px]">
+            <table class="w-full text-left border-collapse min-w-[1020px]">
                 <thead>
                     <tr class="border-b border-outline-variant/20 bg-surface-container-low/50 text-secondary font-label-sm text-label-sm uppercase tracking-wider">
-                        <th class="py-3.5 px-space-md w-[28%] font-semibold" scope="col">Judul Dokumen</th>
-                        <th class="py-3.5 px-space-md w-[22%] font-semibold" scope="col">Pemohon Dokumen</th>
+                        <th class="py-3.5 px-space-md w-[25%] font-semibold" scope="col">Judul Dokumen</th>
+                        <th class="py-3.5 px-space-md w-[20%] font-semibold" scope="col">Pemohon Dokumen</th>
                         <th class="py-3.5 px-space-md w-[16%] font-semibold" scope="col">Kategori & Kerahasiaan</th>
-                        <th class="py-3.5 px-space-md w-[14%] font-semibold" scope="col">Tanggal Pengajuan</th>
+                        <th class="py-3.5 px-space-md w-[13%] font-semibold" scope="col">Tanggal Pengajuan</th>
                         <th class="py-3.5 px-space-md w-[10%] font-semibold" scope="col">Status</th>
-                        <th class="py-3.5 px-space-md w-[10%] font-semibold text-right" scope="col">Aksi</th>
+                        <th class="py-3.5 px-space-md w-[16%] font-semibold text-right" scope="col">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/20 font-body-md text-body-md text-on-surface">
@@ -280,24 +280,35 @@ require_once __DIR__ . '/../layouts/header.php';
 
                             <!-- Aksi -->
                             <td class="py-3.5 px-space-md align-top text-right whitespace-nowrap">
-                                <?php if ($doc['sign_status'] === 'menunggu'): ?>
-                                    <a href="<?= BASE_URL ?>/views/penandatangan/sign_workspace.php?doc_id=<?= $doc['id'] ?>" 
-                                       class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-label-sm text-label-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[16px]">draw</span>
-                                        <span>Buka Workspace TTE</span>
+                                <div class="inline-flex items-center justify-end gap-1.5">
+                                    <a href="<?= BASE_URL ?>/actions/preview_action.php?doc_id=<?= $doc['id'] ?>" 
+                                       target="_blank"
+                                       class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-sm text-label-sm font-semibold rounded-lg border border-outline-variant/30 shadow-xs transition-all whitespace-nowrap"
+                                       title="Buka Pratinjau Dokumen">
+                                        <span class="material-symbols-outlined text-[16px]">visibility</span>
+                                        <span>Preview</span>
                                     </a>
-                                <?php elseif ($doc['sign_status'] === 'disetujui'): ?>
-                                    <a href="<?= BASE_URL ?>/actions/download_action.php?doc_id=<?= $doc['id'] ?>" 
-                                       class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-label-sm text-label-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[16px]">download</span>
-                                        <span>Unduh Berkas</span>
-                                    </a>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-secondary bg-surface-container rounded-lg font-label-sm text-label-sm font-medium whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[14px]">lock</span>
-                                        <span>Terkunci</span>
-                                    </span>
-                                <?php endif; ?>
+                                    <?php if ($doc['sign_status'] === 'menunggu'): ?>
+                                        <a href="<?= BASE_URL ?>/views/penandatangan/sign_workspace.php?doc_id=<?= $doc['id'] ?>" 
+                                           class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-label-sm text-label-sm font-semibold rounded-lg shadow-xs transition-all whitespace-nowrap"
+                                           title="Buka Ruang Penandatanganan">
+                                            <span class="material-symbols-outlined text-[16px]">draw</span>
+                                            <span>TTE</span>
+                                        </a>
+                                    <?php elseif ($doc['sign_status'] === 'disetujui'): ?>
+                                        <a href="<?= BASE_URL ?>/actions/download_action.php?doc_id=<?= $doc['id'] ?>" 
+                                           class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-label-sm text-label-sm font-semibold rounded-lg shadow-xs transition-all whitespace-nowrap"
+                                           title="Unduh Berkas PDF Sah">
+                                            <span class="material-symbols-outlined text-[16px]">download</span>
+                                            <span>Unduh</span>
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary/60 bg-surface-container rounded-lg font-label-sm text-label-sm font-medium whitespace-nowrap" title="Berkas ditolak">
+                                            <span class="material-symbols-outlined text-[14px]">lock</span>
+                                            <span>Unduh</span>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
