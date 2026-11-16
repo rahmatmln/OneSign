@@ -160,7 +160,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 <div class="p-space-md rounded-lg bg-surface-container-low/50 border border-outline-variant/20 flex gap-space-sm text-secondary">
                     <span class="material-symbols-outlined text-[20px] text-primary shrink-0">verified_user</span>
                     <p class="font-body-sm text-body-sm leading-relaxed">
-                        Naskah yang diajukan akan diberi stempel tanda tangan resmi beserta <strong>QR Code verifikasi keaslian</strong> dan <strong>Dynamic Security Watermark</strong>.
+                        Naskah yang diajukan akan diberi stempel tanda tangan resmi beserta <strong>QR Code verifikasi keaslian</strong>.
                     </p>
                 </div>
             </div>

@@ -130,13 +130,23 @@ if (empty($signedPath) || !file_exists($signedPath)) {
 }
 
 // 4. Catat Peristiwa Pengunduhan ke Audit Trail (FR-06)
-writeAuditLog('DOWNLOAD_DOC', $docId, 'Mengunduh berkas ber-watermark. Identitas: ' . $user['full_name'] . ' (' . $user['role'] . ')');
+writeAuditLog('DOWNLOAD_DOC', $docId, 'Mengunduh berkas. Identitas: ' . $user['full_name'] . ' (' . $user['role'] . ')');
 
 // 5. Susun Nama Berkas Unduhan Resmi
 $cleanTitle = preg_replace('/[^a-zA-Z0-9_-]/', '_', $doc['title']);
 $downloadFilename = 'OneSign_' . strtoupper($doc['confidentiality']) . '_' . $cleanTitle . '.pdf';
 
-// 6. Alirkan Berkas Bersama Dynamic Security Watermark (FR-04 & BR-03)
-OneSignPdfEngine::streamWithDynamicWatermark($signedPath, $user, $doc, $downloadFilename);
+// 6. Alirkan Berkas Bersih Resmi (Tanda Tangan & QR Code tanpa watermark diagonal)
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
+header('Content-Type: application/pdf');
+header('Content-Disposition: attachment; filename="' . $downloadFilename . '"');
+header('Content-Length: ' . filesize($signedPath));
+header('Cache-Control: private, max-age=0, must-revalidate');
+header('Pragma: public');
+
+readfile($signedPath);
 exit;
 

@@ -327,7 +327,7 @@ class OneSignPdfEngine extends Fpdi {
     }
 
     /**
-     * Menyematkan Dynamic Security Watermarking secara streaming saat diunduh
+     * Mengalirkan berkas PDF bersih resmi ke peramban tanpa watermark diagonal
      */
     public static function streamWithDynamicWatermark(
         string $pdfPath,
@@ -335,82 +335,19 @@ class OneSignPdfEngine extends Fpdi {
         array $docData,
         string $downloadFilename
     ): void {
-        try {
-            $cleanPdfPath = self::prepareReadablePdf($pdfPath);
-
-            $pdf = new self('P', 'pt');
-            $pdf->SetAutoPageBreak(false);
-            $pageCount = $pdf->setSourceFile($cleanPdfPath);
-
-            $labelKerahasiaan = strtoupper($docData['confidentiality'] ?? 'INTERNAL');
-            $namaPengunduh    = $userData['full_name'] ?? 'PENGGUNA';
-            $identitasNomor   = !empty($userData['identifier_number']) ? ' (' . $userData['identifier_number'] . ')' : '';
-            $emailKampus      = $userData['email'] ?? '';
-            $ipAddress        = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-            $waktuUnduh       = date('d/m/Y H:i:s') . ' WIB';
-
-            for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-                $tplId = $pdf->importPage($pageNum);
-                $size  = $pdf->getTemplateSize($tplId);
-
-                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($tplId);
-
-                // Pengaturan Gaya Teks Watermark
-                $pdf->SetFont('Helvetica', 'B', 13);
-                $pdf->SetTextColor(180, 20, 20); // Merah pudar resmi
-                $pdf->SetAlpha(0.25); // Transparansi 25% - 30%
-
-                $midX = $size['width'] / 2;
-                $midY = $size['height'] / 2;
-
-                // Blok Watermark Tengah
-                $pdf->Rotate(40, $midX, $midY);
-                $pdf->Text($midX - 220, $midY - 14, 'SALINAN RESMI TIK PNJ  |  STATUS: ' . $labelKerahasiaan);
-                
-                $pdf->SetFont('Helvetica', '', 10);
-                $pdf->SetTextColor(30, 40, 60);
-                $pdf->Text($midX - 220, $midY + 2, 'DIUNDUH OLEH: ' . $namaPengunduh . $identitasNomor . '  |  EMAIL: ' . $emailKampus);
-                $pdf->Text($midX - 220, $midY + 16, 'WAKTU AKSES: ' . $waktuUnduh . '  |  IP: ' . $ipAddress);
-                
-                // Blok Watermark Atas (Repetisi untuk perlindungan potongan tangkapan layar)
-                $pdf->SetFont('Helvetica', 'B', 11);
-                $pdf->SetTextColor(180, 20, 20);
-                $pdf->Text($midX - 220, $midY - 180, 'SALINAN RESMI TIK PNJ  |  STATUS: ' . $labelKerahasiaan);
-                $pdf->SetFont('Helvetica', '', 9);
-                $pdf->SetTextColor(30, 40, 60);
-                $pdf->Text($midX - 220, $midY - 166, 'DIUNDUH OLEH: ' . $namaPengunduh . '  |  ' . $waktuUnduh);
-
-                // Blok Watermark Bawah
-                $pdf->SetFont('Helvetica', 'B', 11);
-                $pdf->SetTextColor(180, 20, 20);
-                $pdf->Text($midX - 220, $midY + 160, 'SALINAN RESMI TIK PNJ  |  STATUS: ' . $labelKerahasiaan);
-                $pdf->SetFont('Helvetica', '', 9);
-                $pdf->SetTextColor(30, 40, 60);
-                $pdf->Text($midX - 220, $midY + 174, 'DIUNDUH OLEH: ' . $namaPengunduh . '  |  ' . $waktuUnduh);
-
-                // Reset Rotasi dan Alpha
-                $pdf->Rotate(0);
-                $pdf->SetAlpha(1.0);
-            }
-
-            // Bersihkan buffer output liar sebelum streaming file biner PDF
-            while (ob_get_level()) {
-                ob_end_clean();
-            }
-
-            // Output streaming ke peramban
-            header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="' . $downloadFilename . '"');
-            header('Cache-Control: private, max-age=0, must-revalidate');
-            header('Pragma: public');
-
-            $pdf->Output('I', $downloadFilename);
-            exit;
-
-        } catch (\Throwable $e) {
-            error_log('Gagal menyematkan watermark: ' . $e->getMessage());
-            die('Gagal menghasilkan berkas ber-watermark: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+        while (ob_get_level()) {
+            ob_end_clean();
         }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $downloadFilename . '"');
+        if (file_exists($pdfPath)) {
+            header('Content-Length: ' . filesize($pdfPath));
+        }
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+
+        readfile($pdfPath);
+        exit;
     }
 }
