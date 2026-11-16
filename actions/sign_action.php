@@ -96,6 +96,7 @@ if ($action === 'approve') {
         ?? $_SERVER['HTTP_X_FORWARDED_FOR']
         ?? $_SERVER['REMOTE_ADDR']
         ?? '127.0.0.1';
+    // Ambil IP pertama jika X-Forwarded-For berisi chain
     if (str_contains($signerIp, ',')) {
         $signerIp = trim(explode(',', $signerIp)[0]);
     }
@@ -172,7 +173,7 @@ if ($action === 'approve') {
 
         $pdo->commit();
 
-        // Bersihkan berkas QR sementara
+        // Bersihkan berkas QR sementara (sudah tertempel di PDF)
         if (file_exists($qrFilePath)) {
             unlink($qrFilePath);
         }
