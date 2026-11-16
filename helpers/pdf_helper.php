@@ -262,7 +262,7 @@ class OneSignPdfEngine extends Fpdi {
                     // 4. NIP dan Tanggal Pengesahan
                     $fontSizeInfo = max(5.5, min(8.0, 7.5 * $scaleFactor));
                     $pdf->SetFont('Helvetica', '', $fontSizeInfo);
-                    $infoText = (!empty($signerNip) ? 'NIP. ' . $signerNip : '') . ' • ' . $signedDate;
+                    $infoText = (!empty($signerNip) ? 'NIP. ' . $signerNip : '') . (!empty($signerNip) ? '  |  ' : '') . $signedDate;
                     $pdf->SetTextColor(71, 85, 105); // Slate
                     $pdf->SetXY($safeX, $lineY + (1.5 * $scaleFactor) + (8.5 * $scaleFactor));
                     $pdf->Cell($boxWidth, 8 * $scaleFactor, $infoText, 0, 1, 'C');
@@ -354,9 +354,9 @@ class OneSignPdfEngine extends Fpdi {
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($tplId);
 
-                // Watermark Halus & Elegan (Subtle Slate Tint)
-                $pdf->SetAlpha(0.12); // Transparansi 12%, tidak menutupi isi naskah
-                $pdf->SetTextColor(100, 116, 139); // Slate neutral
+                // Watermark Keamanan Pratinjau (Opacity Ditingkatkan ~25%)
+                $pdf->SetAlpha(0.25); // Opacity 25% agar terlihat tegas namun tetap transparan
+                $pdf->SetTextColor(71, 85, 105); // Slate netral berbobot
 
                 $midX = $size['width'] / 2;
                 $midY = $size['height'] / 2;
@@ -364,12 +364,12 @@ class OneSignPdfEngine extends Fpdi {
                 $pdf->Rotate(35, $midX, $midY);
 
                 // Baris 1: Header Pratinjau Institusi
-                $pdf->SetFont('Helvetica', 'B', 14);
-                $pdf->Text($midX - 200, $midY - 8, 'PRATINJAU DOKUMEN ONESIGN  •  TIK PNJ');
+                $pdf->SetFont('Helvetica', 'B', 15);
+                $pdf->Text($midX - 210, $midY - 8, 'PRATINJAU DOKUMEN ONESIGN  |  TIK PNJ');
 
                 // Baris 2: Identitas Pengakses & Timestamp
-                $pdf->SetFont('Helvetica', '', 10);
-                $pdf->Text($midX - 200, $midY + 10, 'DIAKSES OLEH: ' . strtoupper($namaPengunduh) . $identitasNomor . '  •  ' . $waktuAkses);
+                $pdf->SetFont('Helvetica', 'B', 10.5);
+                $pdf->Text($midX - 210, $midY + 11, 'DIAKSES OLEH: ' . strtoupper($namaPengunduh) . $identitasNomor . '  |  ' . $waktuAkses);
 
                 // Reset rotasi dan transparansi
                 $pdf->Rotate(0);
