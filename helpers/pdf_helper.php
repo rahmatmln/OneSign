@@ -327,6 +327,86 @@ class OneSignPdfEngine extends Fpdi {
     }
 
     /**
+     * Mengalirkan pratinjau PDF ke peramban dengan security watermark halus & elegan
+     * Berfungsi sebagai pengaman tangkapan layar (screen capture prevention)
+     */
+    public static function streamPreviewWithWatermark(
+        string $pdfPath,
+        array $userData,
+        array $docData,
+        string $previewFilename
+    ): void {
+        try {
+            $cleanPdfPath = self::prepareReadablePdf($pdfPath);
+
+            $pdf = new self('P', 'pt');
+            $pdf->SetAutoPageBreak(false);
+            $pageCount = $pdf->setSourceFile($cleanPdfPath);
+
+            $namaPengunduh  = $userData['full_name'] ?? 'PENGGUNA';
+            $identitasNomor = !empty($userData['identifier_number']) ? ' (' . $userData['identifier_number'] . ')' : '';
+            $waktuAkses     = date('d/m/Y H:i') . ' WIB';
+
+            for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
+                $tplId = $pdf->importPage($pageNum);
+                $size  = $pdf->getTemplateSize($tplId);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($tplId);
+
+                // Watermark Halus & Elegan (Subtle Slate Tint)
+                $pdf->SetAlpha(0.12); // Transparansi 12%, tidak menutupi isi naskah
+                $pdf->SetTextColor(100, 116, 139); // Slate neutral
+
+                $midX = $size['width'] / 2;
+                $midY = $size['height'] / 2;
+
+                $pdf->Rotate(35, $midX, $midY);
+
+                // Baris 1: Header Pratinjau Institusi
+                $pdf->SetFont('Helvetica', 'B', 14);
+                $pdf->Text($midX - 200, $midY - 8, 'PRATINJAU DOKUMEN ONESIGN  •  TIK PNJ');
+
+                // Baris 2: Identitas Pengakses & Timestamp
+                $pdf->SetFont('Helvetica', '', 10);
+                $pdf->Text($midX - 200, $midY + 10, 'DIAKSES OLEH: ' . strtoupper($namaPengunduh) . $identitasNomor . '  •  ' . $waktuAkses);
+
+                // Reset rotasi dan transparansi
+                $pdf->Rotate(0);
+                $pdf->SetAlpha(1.0);
+            }
+
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="' . $previewFilename . '"');
+            header('Cache-Control: private, max-age=0, must-revalidate');
+            header('Pragma: public');
+
+            $pdf->Output('I', $previewFilename);
+            exit;
+
+        } catch (\Throwable $e) {
+            error_log('Gagal menyematkan preview watermark: ' . $e->getMessage());
+            // Fallback: alirkan berkas langsung jika terjadi hambatan pada parser
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="' . $previewFilename . '"');
+            if (file_exists($pdfPath)) {
+                header('Content-Length: ' . filesize($pdfPath));
+            }
+            header('Cache-Control: private, max-age=0, must-revalidate');
+            header('Pragma: public');
+            readfile($pdfPath);
+            exit;
+        }
+    }
+
+    /**
      * Mengalirkan berkas PDF bersih resmi ke peramban tanpa watermark diagonal
      */
     public static function streamWithDynamicWatermark(

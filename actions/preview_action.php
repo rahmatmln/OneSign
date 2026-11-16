@@ -143,16 +143,6 @@ $cleanTitle = preg_replace('/[^a-zA-Z0-9_-]/', '_', $doc['title']);
 $statusPrefix = ($doc['status'] === 'disetujui') ? 'SAH' : 'DRAFT';
 $previewFilename = 'OneSign_' . $statusPrefix . '_' . $cleanTitle . '.pdf';
 
-// Alirkan Berkas untuk Pratinjau di Peramban (Inline)
-while (ob_get_level()) {
-    ob_end_clean();
-}
-
-header('Content-Type: application/pdf');
-header('Content-Disposition: inline; filename="' . $previewFilename . '"');
-header('Content-Length: ' . filesize($targetFile));
-header('Cache-Control: private, max-age=0, must-revalidate');
-header('Pragma: public');
-
-readfile($targetFile);
+// Alirkan Berkas untuk Pratinjau di Peramban dengan Security Watermark Halus (Screen Capture Protection)
+OneSignPdfEngine::streamPreviewWithWatermark($targetFile, $user, $doc, $previewFilename);
 exit;
