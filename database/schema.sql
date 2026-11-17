@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     requester_id INT NOT NULL,
     title VARCHAR(200) NOT NULL,
+    notes TEXT NULL,
     category VARCHAR(100) NOT NULL,
     confidentiality ENUM('publik', 'internal', 'rahasia') NOT NULL DEFAULT 'internal',
     original_filename VARCHAR(255) NOT NULL,

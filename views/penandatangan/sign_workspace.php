@@ -26,7 +26,7 @@ $pdo = Database::getConnection();
 // Mengambil rincian dokumen dan penugasan penandatangan
 $stmt = $pdo->prepare("
     SELECT 
-        d.id, d.title, d.category, d.confidentiality, d.original_filename, 
+        d.id, d.title, d.notes, d.category, d.confidentiality, d.original_filename, 
         d.file_size, d.status AS doc_status, d.created_at,
         u.full_name AS requester_name, u.identifier_number AS requester_nim,
         ds.id AS signer_entry_id, ds.status AS sign_status, ds.page_number, ds.pos_x, ds.pos_y, ds.box_width, ds.box_height
@@ -202,7 +202,7 @@ $csrfToken = generateCsrfToken();
                         </span>
                         <?php if ($doc['sign_status'] === 'menunggu'): ?>
                             <span class="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
-                                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                                 Menunggu Pengesahan
                             </span>
                         <?php endif; ?>
@@ -248,6 +248,16 @@ $csrfToken = generateCsrfToken();
     <!-- Main Workspace Area -->
     <main class="w-full px-space-md sm:px-space-lg py-space-md flex-1 flex flex-col">
         
+        <?php if (!empty($doc['notes'])): ?>
+            <div class="bg-surface-container-low border border-outline-variant/30 rounded-xl p-3 mb-space-md flex items-start gap-2.5 text-xs text-on-surface shadow-xs">
+                <span class="material-symbols-outlined text-[18px] text-primary shrink-0 mt-0.5">sticky_note_2</span>
+                <div class="min-w-0">
+                    <span class="font-bold text-primary block">Catatan Pemohon:</span>
+                    <p class="text-secondary mt-0.5 whitespace-pre-wrap break-words"><?= htmlspecialchars($doc['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- Toolbar Navigasi Halaman & Info Posisi (read-only) -->
         <div class="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-space-sm mb-space-md flex flex-wrap items-center justify-between gap-3 shadow-sm">
             
@@ -259,7 +269,7 @@ $csrfToken = generateCsrfToken();
                     </button>
                     <div class="px-3 font-body-sm text-body-sm text-on-surface flex items-center gap-1.5">
                         <span class="text-secondary">Halaman</span>
-                        <span id="current-page-num" class="font-bold text-primary font-code-audit">1</span>
+                        <input type="number" id="input-page-num" min="1" max="1" value="1" class="w-12 h-6 text-center font-bold text-primary bg-surface-container-lowest border border-outline-variant/30 rounded focus:ring-1 focus:ring-primary focus:outline-none font-code-audit text-xs" title="Ketik nomor halaman lalu tekan Enter">
                         <span class="text-secondary">dari</span>
                         <span id="total-pages-num" class="font-bold font-code-audit">1</span>
                     </div>
@@ -481,7 +491,11 @@ $csrfToken = generateCsrfToken();
                 });
             });
 
-            document.getElementById('current-page-num').innerText = num;
+            const pageInput = document.getElementById('input-page-num');
+            if (pageInput) {
+                pageInput.value = num;
+                if (pdfDoc) pageInput.max = pdfDoc.numPages;
+            }
         }
 
         function queueRenderPage(num) {
@@ -490,6 +504,28 @@ $csrfToken = generateCsrfToken();
             } else {
                 renderPage(num);
             }
+        }
+
+        const pageInput = document.getElementById('input-page-num');
+        if (pageInput) {
+            const handlePageInput = function() {
+                let val = parseInt(pageInput.value, 10);
+                if (isNaN(val)) return;
+                if (val < 1) val = 1;
+                if (pdfDoc && val > pdfDoc.numPages) val = pdfDoc.numPages;
+                pageInput.value = val;
+                if (val !== pageNum) {
+                    pageNum = val;
+                    queueRenderPage(pageNum);
+                }
+            };
+            pageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handlePageInput();
+                }
+            });
+            pageInput.addEventListener('change', handlePageInput);
         }
 
         document.getElementById('btn-prev-page').addEventListener('click', function() {
@@ -508,6 +544,7 @@ $csrfToken = generateCsrfToken();
         pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
             pdfDoc = pdfDoc_;
             document.getElementById('total-pages-num').innerText = pdfDoc.numPages;
+            if (pageInput) pageInput.max = pdfDoc.numPages;
             if (pageNum > pdfDoc.numPages) pageNum = 1;
             renderPage(pageNum);
         }).catch(function(error) {

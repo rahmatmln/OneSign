@@ -54,9 +54,11 @@
                 </button>
                 
                 <!-- Indikator Halaman -->
-                <span class="font-code-audit text-code-audit text-xs font-semibold px-2 text-on-surface whitespace-nowrap">
-                    <span id="pdfPreviewCurrentPage">1</span> / <span id="pdfPreviewTotalPages">1</span>
-                </span>
+                <div class="flex items-center gap-1 font-code-audit text-xs font-semibold px-1 text-on-surface whitespace-nowrap">
+                    <input type="number" id="inputPdfPreviewPage" min="1" max="1" value="1" class="w-12 h-6 text-center font-bold text-primary bg-surface-container-low border border-outline-variant/30 rounded focus:ring-1 focus:ring-primary focus:outline-none font-code-audit text-xs" title="Ketik nomor halaman lalu tekan Enter">
+                    <span class="text-secondary font-normal">/</span>
+                    <span id="pdfPreviewTotalPages">1</span>
+                </div>
                 
                 <!-- Tombol Next -->
                 <button type="button" 
@@ -168,7 +170,7 @@
     const canvas = document.getElementById('pdfPreviewCanvas');
     const ctx = canvas.getContext('2d');
     const titleEl = document.getElementById('pdfPreviewTitle');
-    const curPageEl = document.getElementById('pdfPreviewCurrentPage');
+    const curPageInput = document.getElementById('inputPdfPreviewPage');
     const totPageEl = document.getElementById('pdfPreviewTotalPages');
     const zoomLabel = document.getElementById('pdfPreviewZoomLabel');
     const loadingEl = document.getElementById('pdfPreviewLoading');
@@ -205,6 +207,7 @@
         }).promise.then(function(pdfDoc_) {
             currentPdfDoc = pdfDoc_;
             totPageEl.textContent = currentPdfDoc.numPages;
+            if (curPageInput) curPageInput.max = currentPdfDoc.numPages;
             loadingEl.classList.add('hidden');
             renderPreviewPage(currentPageNum);
         }).catch(function(err) {
@@ -264,7 +267,10 @@
             isPageRendering = false;
         });
 
-        curPageEl.textContent = num;
+        if (curPageInput) {
+            curPageInput.value = num;
+            if (currentPdfDoc) curPageInput.max = currentPdfDoc.numPages;
+        }
     }
 
     function queueRender(num) {
@@ -277,6 +283,29 @@
 
     function updateZoomLabel() {
         zoomLabel.textContent = Math.round(currentScale * 100 / 1.25) + '%';
+    }
+
+    // Input Halaman Manual
+    if (curPageInput) {
+        const handleJumpPage = function() {
+            if (!currentPdfDoc) return;
+            let val = parseInt(curPageInput.value, 10);
+            if (isNaN(val)) return;
+            if (val < 1) val = 1;
+            if (val > currentPdfDoc.numPages) val = currentPdfDoc.numPages;
+            curPageInput.value = val;
+            if (val !== currentPageNum) {
+                currentPageNum = val;
+                queueRender(currentPageNum);
+            }
+        };
+        curPageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleJumpPage();
+            }
+        });
+        curPageInput.addEventListener('change', handleJumpPage);
     }
 
     // Navigasi Tombol

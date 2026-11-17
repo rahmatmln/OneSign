@@ -18,7 +18,7 @@ $pdo = Database::getConnection();
 // Mengambil dokumen yang ditugaskan ke penandatangan ini
 $stmt = $pdo->prepare("
     SELECT 
-        d.id, d.title, d.category, d.confidentiality, d.original_filename, 
+        d.id, d.title, d.notes, d.category, d.confidentiality, d.original_filename, 
         d.file_size, d.created_at,
         u.full_name AS requester_name,
         u.identifier_number AS requester_nim,
@@ -209,6 +209,15 @@ require_once __DIR__ . '/../layouts/header.php';
                                         <?= round($doc['file_size'] / 1024, 1) ?> KB
                                     </span>
                                 </div>
+                                <?php if (!empty($doc['notes'])): ?>
+                                    <div class="mt-2 p-2 rounded-lg bg-surface-container-low border border-outline-variant/30 text-xs flex items-start gap-1.5 max-w-sm">
+                                        <span class="material-symbols-outlined text-[15px] text-primary shrink-0 mt-0.5">sticky_note_2</span>
+                                        <div class="min-w-0">
+                                            <span class="font-semibold text-primary block leading-tight">Catatan Pemohon:</span>
+                                            <p class="text-secondary leading-normal mt-0.5 break-words"><?= htmlspecialchars($doc['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </td>
 
                             <!-- Pemohon Dokumen -->

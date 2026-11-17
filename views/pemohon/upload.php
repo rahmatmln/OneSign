@@ -67,25 +67,33 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 </div>
 
-<!-- Stepper Navigation (Stitch 100% Identik) -->
-<div class="bg-surface-container-lowest px-space-lg py-space-md rounded-xl shadow-sm border border-outline-variant/20 flex items-center justify-between">
-    <div class="flex items-center gap-space-md">
-        <div class="flex items-center gap-space-xs text-primary font-label-md text-label-md font-semibold">
-            <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold">1</span>
-            <span>Unggah Dokumen</span>
-        </div>
-        <span class="text-outline-variant font-bold text-xs">/</span>
-        <div class="flex items-center gap-space-xs text-primary font-label-md text-label-md font-semibold">
-            <span class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold">2</span>
-            <span>Metadata &amp; Penandatangan</span>
-        </div>
-        <span class="text-outline-variant font-bold text-xs">/</span>
-        <div class="flex items-center gap-space-xs text-secondary font-label-md text-label-md">
-            <span class="w-6 h-6 rounded-full bg-surface-container text-secondary flex items-center justify-center text-label-sm font-bold">3</span>
-            <span>Atur Posisi TTD</span>
+<!-- Stepper Navigation Dinamis -->
+<div class="bg-surface-container-lowest px-space-lg py-3 rounded-xl shadow-sm border border-outline-variant/20 flex flex-col gap-2.5">
+    <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 sm:gap-space-md overflow-x-auto py-0.5">
+            <!-- Step 1: Unggah Dokumen -->
+            <button type="button" id="step-btn-1" onclick="scrollToStep(1)" class="flex items-center gap-space-xs text-primary font-label-md text-label-md font-semibold transition-all hover:opacity-85 text-left focus:outline-none cursor-pointer">
+                <span id="step-badge-1" class="w-6 h-6 rounded-full bg-primary text-on-primary ring-4 ring-primary/15 flex items-center justify-center text-label-sm font-bold transition-all shadow-xs shrink-0">1</span>
+                <span id="step-label-1" class="whitespace-nowrap">Unggah Dokumen</span>
+            </button>
+            <span class="text-outline-variant font-bold text-xs select-none">/</span>
+            <!-- Step 2: Metadata & Penandatangan -->
+            <button type="button" id="step-btn-2" onclick="scrollToStep(2)" class="flex items-center gap-space-xs text-secondary/70 font-label-md text-label-md transition-all hover:opacity-85 text-left focus:outline-none cursor-pointer">
+                <span id="step-badge-2" class="w-6 h-6 rounded-full bg-surface-container text-secondary/70 flex items-center justify-center text-label-sm font-bold transition-all shrink-0">2</span>
+                <span id="step-label-2" class="whitespace-nowrap">Metadata &amp; Penandatangan</span>
+            </button>
+            <span class="text-outline-variant font-bold text-xs select-none">/</span>
+            <!-- Step 3: Atur Posisi TTD -->
+            <button type="button" id="step-btn-3" onclick="scrollToStep(3)" class="flex items-center gap-space-xs text-secondary/70 font-label-md text-label-md transition-all hover:opacity-85 text-left focus:outline-none cursor-pointer">
+                <span id="step-badge-3" class="w-6 h-6 rounded-full bg-surface-container text-secondary/70 flex items-center justify-center text-label-sm font-bold transition-all shrink-0">3</span>
+                <span id="step-label-3" class="whitespace-nowrap">Atur Posisi TTD</span>
+            </button>
         </div>
     </div>
-    <span class="text-body-sm text-secondary hidden sm:inline">Langkah Pengajuan Terpadu</span>
+    <!-- Mini Progress Bar -->
+    <div class="w-full bg-surface-container/60 h-1 rounded-full overflow-hidden">
+        <div id="stepper-progress-bar" class="bg-primary h-full transition-all duration-300 ease-out" style="width: 33.33%;"></div>
+    </div>
 </div>
 
 <!-- Alert Pesan Error -->
@@ -111,7 +119,7 @@ require_once __DIR__ . '/../layouts/header.php';
                         <span class="material-symbols-outlined text-primary text-[20px]">upload_file</span>
                         <span>Berkas Dokumen</span>
                     </div>
-                    <span class="font-code-audit-sm text-code-audit-sm text-secondary font-semibold">Maks. 10 MB</span>
+                    <span class="font-code-audit-sm text-code-audit-sm text-secondary font-semibold">Maks. 2 MB</span>
                 </div>
 
                 <!-- Drag & Drop Zone -->
@@ -125,7 +133,7 @@ require_once __DIR__ . '/../layouts/header.php';
                             Tarik berkas PDF ke sini atau <span class="text-primary hover:underline">Pilih Berkas</span>
                         </p>
                         <p class="font-body-sm text-body-sm text-secondary">
-                            Format berkas resmi .pdf dengan ukuran maksimal 10 MB
+                            Format berkas resmi .pdf dengan ukuran maksimal 2 MB
                         </p>
                     </div>
                     <input type="file" 
@@ -300,7 +308,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     </button>
                     <div class="px-3 font-body-sm text-body-sm text-on-surface flex items-center gap-1.5">
                         <span class="text-secondary">Halaman</span>
-                        <span id="current-page-num" class="font-bold text-primary">1</span>
+                        <input type="number" id="input-page-num" min="1" max="1" value="1" class="w-12 h-6 text-center font-bold text-primary bg-surface-container-lowest border border-outline-variant/30 rounded focus:ring-1 focus:ring-primary focus:outline-none font-code-audit text-xs" title="Ketik nomor halaman lalu tekan Enter">
                         <span class="text-secondary">dari</span>
                         <span id="total-pages-num" class="font-bold">1</span>
                     </div>
@@ -377,9 +385,126 @@ require_once __DIR__ . '/../layouts/header.php';
 </form>
 
 <script>
-    // ==========================================
-    // Bagian 1: Penanganan Unggah Berkas & Drag Drop
-    // ==========================================
+    // Navigasi Stepper Dinamis
+    let hasPositionInteracted = false;
+
+    function scrollToStep(stepNum) {
+        let target = null;
+        if (stepNum === 1) target = document.getElementById('drop-zone');
+        else if (stepNum === 2) target = document.getElementById('title');
+        else if (stepNum === 3) {
+            target = document.getElementById('position-card');
+            hasPositionInteracted = true;
+            updateStepperState();
+        }
+
+        if (target) {
+            if (stepNum === 3 && target.classList.contains('hidden')) {
+                const drop = document.getElementById('drop-zone');
+                if (drop) {
+                    drop.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    drop.classList.add('ring-2', 'ring-primary');
+                    setTimeout(() => drop.classList.remove('ring-2', 'ring-primary'), 1200);
+                }
+                return;
+            }
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (target.focus && typeof target.focus === 'function' && target.tagName !== 'DIV') {
+                target.focus();
+            }
+        }
+    }
+
+    function setStepVisual(num, state) {
+        const btn = document.getElementById('step-btn-' + num);
+        const badge = document.getElementById('step-badge-' + num);
+        const label = document.getElementById('step-label-' + num);
+        if (!btn || !badge || !label) return;
+
+        if (state === 'completed') {
+            btn.className = 'flex items-center gap-space-xs text-on-surface font-label-md text-label-md font-semibold transition-all hover:opacity-85 text-left focus:outline-none cursor-pointer';
+            badge.className = 'w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-label-sm font-bold transition-all shadow-xs shrink-0';
+            badge.innerHTML = '<span class="material-symbols-outlined text-[15px] font-bold">check</span>';
+        } else if (state === 'active') {
+            btn.className = 'flex items-center gap-space-xs text-primary font-label-md text-label-md font-bold transition-all hover:opacity-85 text-left focus:outline-none cursor-pointer';
+            badge.className = 'w-6 h-6 rounded-full bg-primary text-on-primary ring-4 ring-primary/15 flex items-center justify-center text-label-sm font-bold transition-all shadow-xs shrink-0';
+            badge.innerText = num;
+        } else {
+            // pending / upcoming
+            btn.className = 'flex items-center gap-space-xs text-secondary/70 font-label-md text-label-md transition-all hover:opacity-85 text-left focus:outline-none cursor-pointer';
+            badge.className = 'w-6 h-6 rounded-full bg-surface-container text-secondary/70 flex items-center justify-center text-label-sm font-bold transition-all shrink-0';
+            badge.innerText = num;
+        }
+    }
+
+    function updateStepperState() {
+        const fileInput = document.getElementById('pdf_file');
+        const titleInput = document.getElementById('title');
+        const signerSelect = document.getElementById('signer_id');
+        const posCard = document.getElementById('position-card');
+
+        const hasFile = Boolean(fileInput && fileInput.files && fileInput.files.length > 0);
+        const hasTitle = Boolean(titleInput && titleInput.value.trim().length > 0);
+        const hasSigner = Boolean(signerSelect && signerSelect.value !== '');
+        const hasPdf = Boolean(posCard && !posCard.classList.contains('hidden') && window.isPdfDocReady && window.isPdfDocReady());
+
+        const isStep1Done = hasFile;
+        const isStep2Done = hasTitle && hasSigner;
+        const isStep3Done = hasPdf && (hasPositionInteracted || isStep2Done);
+
+        const progEl = document.getElementById('stepper-progress-bar');
+
+        if (!isStep1Done) {
+            setStepVisual(1, 'active');
+            setStepVisual(2, 'pending');
+            setStepVisual(3, 'pending');
+            if (progEl) {
+                progEl.style.width = '33.33%';
+                progEl.className = 'bg-primary h-full transition-all duration-300 ease-out';
+            }
+        } else if (!isStep2Done) {
+            setStepVisual(1, 'completed');
+            setStepVisual(2, 'active');
+            setStepVisual(3, 'pending');
+            if (progEl) {
+                progEl.style.width = '66.66%';
+                progEl.className = 'bg-primary h-full transition-all duration-300 ease-out';
+            }
+        } else if (!hasPositionInteracted) {
+            setStepVisual(1, 'completed');
+            setStepVisual(2, 'completed');
+            setStepVisual(3, 'active');
+            if (progEl) {
+                progEl.style.width = '90%';
+                progEl.className = 'bg-primary h-full transition-all duration-300 ease-out';
+            }
+        } else {
+            // Semua tahap selesai
+            setStepVisual(1, 'completed');
+            setStepVisual(2, 'completed');
+            setStepVisual(3, 'completed');
+            if (progEl) {
+                progEl.style.width = '100%';
+                progEl.className = 'bg-emerald-600 h-full transition-all duration-300 ease-out';
+            }
+        }
+    }
+
+    window.markPositionInteracted = function() {
+        hasPositionInteracted = true;
+        updateStepperState();
+    };
+
+    // Event listeners untuk perubahan metadata
+    document.addEventListener('DOMContentLoaded', function() {
+        const titleEl = document.getElementById('title');
+        const signerEl = document.getElementById('signer_id');
+        if (titleEl) titleEl.addEventListener('input', updateStepperState);
+        if (signerEl) signerEl.addEventListener('change', updateStepperState);
+        updateStepperState();
+    });
+
+    // Penanganan Unggah Berkas & Drag Drop
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('pdf_file');
 
@@ -423,14 +548,16 @@ require_once __DIR__ . '/../layouts/header.php';
                 input.value = '';
                 fileInfo.classList.add('hidden');
                 window.hideSignaturePreview();
+                updateStepperState();
                 return;
             }
 
-            if (file.size > 10 * 1024 * 1024) {
-                alert('Peringatan: Ukuran berkas melebihi batas maksimal 10 MB.');
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Peringatan: Ukuran berkas melebihi batas maksimal 2 MB.');
                 input.value = '';
                 fileInfo.classList.add('hidden');
                 window.hideSignaturePreview();
+                updateStepperState();
                 return;
             }
 
@@ -451,6 +578,7 @@ require_once __DIR__ . '/../layouts/header.php';
             fileInfo.classList.add('hidden');
             window.hideSignaturePreview();
         }
+        updateStepperState();
     }
 
     function clearSelectedFile() {
@@ -458,12 +586,12 @@ require_once __DIR__ . '/../layouts/header.php';
         const fileInfo = document.getElementById('file-info');
         if (input) input.value = '';
         if (fileInfo) fileInfo.classList.add('hidden');
+        hasPositionInteracted = false;
         window.hideSignaturePreview();
+        updateStepperState();
     }
 
-    // ==========================================
-    // Bagian 2: Pratinjau PDF & Posisi Tanda Tangan
-    // ==========================================
+    // Pratinjau PDF & Posisi Tanda Tangan
     (function () {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -475,6 +603,8 @@ require_once __DIR__ . '/../layouts/header.php';
         let pageNum = 1;
         let mult = 1;
         let busy = false;
+
+        window.isPdfDocReady = () => Boolean(pdfDoc);
 
         const posCard   = document.getElementById('position-card');
         const canvas    = document.getElementById('pdf-render-canvas');
@@ -527,7 +657,11 @@ require_once __DIR__ . '/../layouts/header.php';
                 container.style.height = vp.height + 'px';
                 await page.render({ canvasContext: ctx, viewport: vp }).promise;
                 pageNum = num;
-                document.getElementById('current-page-num').innerText = num;
+                const pageInput = document.getElementById('input-page-num');
+                if (pageInput) {
+                    pageInput.value = num;
+                    if (pdfDoc) pageInput.max = pdfDoc.numPages;
+                }
             } finally {
                 busy = false;
             }
@@ -539,36 +673,76 @@ require_once __DIR__ . '/../layouts/header.php';
                 const buf = await file.arrayBuffer();
                 pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
                 document.getElementById('total-pages-num').innerText = pdfDoc.numPages;
+                const pageInput = document.getElementById('input-page-num');
+                if (pageInput) pageInput.max = pdfDoc.numPages;
                 posCard.classList.remove('hidden');
                 mult = 1;
                 pageNum = 1;
                 box.style.left = '80px';
                 box.style.top  = '100px';
                 await renderPage(1);
+                updateStepperState();
             } catch (err) {
                 console.error('Gagal memuat pratinjau PDF:', err);
                 pdfDoc = null;
                 posCard.classList.add('hidden');
                 alert('PDF tidak dapat ditampilkan untuk mengatur posisi tanda tangan. Pastikan berkas PDF valid.');
+                updateStepperState();
             }
         };
 
         window.hideSignaturePreview = function () {
             pdfDoc = null;
             posCard.classList.add('hidden');
+            updateStepperState();
         };
 
         // Navigasi halaman
+        const pageInput = document.getElementById('input-page-num');
+        if (pageInput) {
+            const handlePageInput = function () {
+                if (!pdfDoc) return;
+                let val = parseInt(pageInput.value, 10);
+                if (isNaN(val)) return;
+                if (val < 1) val = 1;
+                if (val > pdfDoc.numPages) val = pdfDoc.numPages;
+                pageInput.value = val;
+                if (val !== pageNum) {
+                    renderPage(val);
+                    window.markPositionInteracted();
+                }
+            };
+            pageInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handlePageInput();
+                }
+            });
+            pageInput.addEventListener('change', handlePageInput);
+        }
+
         document.getElementById('btn-prev-page').addEventListener('click', function () {
-            if (pdfDoc && pageNum > 1) renderPage(pageNum - 1);
+            if (pdfDoc && pageNum > 1) {
+                renderPage(pageNum - 1);
+                window.markPositionInteracted();
+            }
         });
         document.getElementById('btn-next-page').addEventListener('click', function () {
-            if (pdfDoc && pageNum < pdfDoc.numPages) renderPage(pageNum + 1);
+            if (pdfDoc && pageNum < pdfDoc.numPages) {
+                renderPage(pageNum + 1);
+                window.markPositionInteracted();
+            }
         });
 
         // Ukuran kotak
-        document.getElementById('btn-grow-sig').addEventListener('click', function () { setBoxScale(mult + 0.15); });
-        document.getElementById('btn-shrink-sig').addEventListener('click', function () { setBoxScale(mult - 0.15); });
+        document.getElementById('btn-grow-sig').addEventListener('click', function () {
+            setBoxScale(mult + 0.15);
+            window.markPositionInteracted();
+        });
+        document.getElementById('btn-shrink-sig').addEventListener('click', function () {
+            setBoxScale(mult - 0.15);
+            window.markPositionInteracted();
+        });
 
         // Geser kotak (Pointer Drag)
         let drag = null;
@@ -577,6 +751,7 @@ require_once __DIR__ . '/../layouts/header.php';
             box.setPointerCapture(e.pointerId);
             drag = { x: e.clientX, y: e.clientY, l: box.offsetLeft, t: box.offsetTop };
             box.style.cursor = 'grabbing';
+            window.markPositionInteracted();
         });
         box.addEventListener('pointermove', function (e) {
             if (!drag) return;
@@ -597,6 +772,7 @@ require_once __DIR__ . '/../layouts/header.php';
             e.preventDefault();
             resizer.setPointerCapture(e.pointerId);
             rs = { x: e.clientX, w: box.offsetWidth };
+            window.markPositionInteracted();
         });
         resizer.addEventListener('pointermove', function (e) {
             if (!rs) return;

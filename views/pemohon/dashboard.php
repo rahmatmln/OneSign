@@ -19,7 +19,7 @@ $pdo = Database::getConnection();
 // Mengambil daftar dokumen yang diajukan oleh pemohon ini
 $stmt = $pdo->prepare("
     SELECT 
-        d.id, d.title, d.category, d.confidentiality, d.original_filename, 
+        d.id, d.title, d.notes, d.category, d.confidentiality, d.original_filename, 
         d.file_size, d.status, d.created_at,
         u.full_name AS signer_name,
         ds.status AS signer_status,
@@ -227,6 +227,15 @@ require_once __DIR__ . '/../layouts/header.php';
                                         <span class="font-code-audit-sm text-code-audit-sm text-secondary">
                                             <?= htmlspecialchars($doc['original_filename'], ENT_QUOTES, 'UTF-8') ?> • <?= round($doc['file_size'] / 1024, 1) ?> KB
                                         </span>
+                                        <?php if (!empty($doc['notes'])): ?>
+                                            <div class="mt-1.5 p-1.5 rounded bg-surface-container-low border border-outline-variant/30 text-xs flex items-start gap-1 max-w-xs">
+                                                <span class="material-symbols-outlined text-[14px] text-primary shrink-0 mt-0.5">sticky_note_2</span>
+                                                <div class="min-w-0">
+                                                    <span class="font-semibold text-primary block leading-tight text-[11px]">Catatan:</span>
+                                                    <p class="text-secondary leading-tight mt-0.5 break-words text-[11px]"><?= htmlspecialchars($doc['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </td>

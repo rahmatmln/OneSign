@@ -32,6 +32,7 @@ $title           = trim($_POST['title'] ?? '');
 $category        = trim($_POST['category'] ?? '');
 $confidentiality = trim($_POST['confidentiality'] ?? 'internal');
 $signerId        = (int)($_POST['signer_id'] ?? 0);
+$notes           = trim($_POST['notes'] ?? '');
 
 if (empty($title) || empty($category) || $signerId <= 0) {
     $_SESSION['upload_error'] = 'Seluruh kolom bertanda bintang (*) wajib diisi dengan benar.';
@@ -82,9 +83,9 @@ $fileTmpPath   = $_FILES['pdf_file']['tmp_name'];
 $originalName  = basename($_FILES['pdf_file']['name']);
 $fileSize      = (int)$_FILES['pdf_file']['size'];
 
-// Cek Ukuran Berkas (Maksimal 10 MB)
+// Cek Ukuran Berkas (Maksimal 2 MB)
 if ($fileSize > MAX_UPLOAD_SIZE) {
-    $_SESSION['upload_error'] = 'Ukuran berkas melebihi batas maksimal 10 MB.';
+    $_SESSION['upload_error'] = 'Ukuran berkas melebihi batas maksimal 2 MB.';
     header('Location: ' . BASE_URL . '/views/pemohon/upload.php');
     exit;
 }
@@ -136,12 +137,13 @@ try {
 
     // Simpan ke tabel documents
     $stmtDoc = $pdo->prepare("
-        INSERT INTO documents (requester_id, title, category, confidentiality, original_filename, file_path, file_size, status)
-        VALUES (:requester_id, :title, :category, :confidentiality, :original_filename, :file_path, :file_size, 'menunggu')
+        INSERT INTO documents (requester_id, title, notes, category, confidentiality, original_filename, file_path, file_size, status)
+        VALUES (:requester_id, :title, :notes, :category, :confidentiality, :original_filename, :file_path, :file_size, 'menunggu')
     ");
     $stmtDoc->execute([
         ':requester_id'       => $user['id'],
         ':title'              => $title,
+        ':notes'              => (!empty($notes) ? $notes : null),
         ':category'           => $category,
         ':confidentiality'    => $confidentiality,
         ':original_filename'  => $originalName,
