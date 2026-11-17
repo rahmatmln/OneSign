@@ -58,9 +58,7 @@ if ($docData['sign_status'] !== 'menunggu') {
     die('Dokumen ini sudah pernah diproses sebelumnya dan statusnya terkunci.');
 }
 
-// ==========================================
-// KASUS A: PERSETUJUAN DOKUMEN (APPROVE)
-// ==========================================
+// Persetujuan Dokumen (Approve)
 if ($action === 'approve') {
     // Posisi TTD diambil dari penentuan pemohon pada database
     $pageNum   = max(1, (int)($docData['page_number'] ?: 1));
@@ -188,17 +186,21 @@ if ($action === 'approve') {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        if (file_exists($qrFilePath)) {
+        if (!empty($qrFilePath) && file_exists($qrFilePath)) {
             unlink($qrFilePath);
         }
-        error_log('Gagal mengesahkan dokumen: ' . $e->getMessage());
-        die('Terjadi kesalahan basis data saat mengesahkan dokumen: ' . $e->getMessage());
+        if (!empty($sigFilePath) && file_exists($sigFilePath)) {
+            unlink($sigFilePath);
+        }
+        if (!empty($targetSignedPath) && file_exists($targetSignedPath)) {
+            unlink($targetSignedPath);
+        }
+        error_log('Gagal mengesahkan dokumen ID #' . $docId . ': ' . $e->getMessage());
+        die('Terjadi kendala pada sistem saat memproses pengesahan dokumen. Silakan coba beberapa saat lagi.');
     }
 }
 
-// ==========================================
-// KASUS B: PENOLAKAN DOKUMEN (REJECT)
-// ==========================================
+// Penolakan Dokumen (Reject)
 if ($action === 'reject') {
     $rejectionNote = trim($_POST['rejection_note'] ?? '');
 

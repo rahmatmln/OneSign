@@ -65,64 +65,7 @@ if ($doc['confidentiality'] === 'rahasia') {
 $targetFile = null;
 
 if ($doc['status'] === 'disetujui') {
-    $signedPath = $doc['signed_file_path'];
-    $safeSignedName = 'SIGNED_' . basename($doc['file_path']);
-    $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
-
-    // Periksa keabsahan berkas bertanda tangan fisik yang ada
-    $isSignedValid = false;
-    if (!empty($signedPath) && file_exists($signedPath) && filesize($signedPath) > 0) {
-        try {
-            $tester = new OneSignPdfEngine('P', 'pt');
-            $tester->setSourceFile($signedPath);
-            $isSignedValid = true;
-        } catch (\Throwable $e) {
-            $isSignedValid = false;
-        }
-    }
-
-    // Jika file bertanda tangan belum ada di disk atau tidak valid, hasilkan ulang stempel lengkap beserta QR Code
-    if (!$isSignedValid && !empty($doc['signature_image_path']) && file_exists($doc['signature_image_path'])) {
-        $qrFilePath = '';
-        if (!empty($doc['verify_token'])) {
-            $verifyUrl = BASE_URL . '/views/verify.php?token=' . $doc['verify_token'];
-            $qrFileName = 'QR_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.png';
-            $qrFilePath = DIR_UPLOADS_SIGNATURES . $qrFileName;
-            OneSignPdfEngine::generateQrCode($verifyUrl, $qrFilePath);
-        }
-
-        $signedDateFormatted = !empty($doc['signed_at']) ? date('d/m/Y', strtotime($doc['signed_at'])) : date('d/m/Y');
-        $stamped = OneSignPdfEngine::stampSignature(
-            $doc['file_path'],
-            $targetSignedPath,
-            (int)$doc['page_number'],
-            $doc['signature_image_path'],
-            (float)$doc['pos_x'],
-            (float)$doc['pos_y'],
-            (float)$doc['box_width'],
-            (float)$doc['box_height'],
-            $doc['signer_name'] ?? '',
-            $doc['signer_nip'] ?? '',
-            $signedDateFormatted,
-            $qrFilePath
-        );
-
-        if (!empty($qrFilePath) && file_exists($qrFilePath)) {
-            unlink($qrFilePath);
-        }
-
-        if ($stamped) {
-            $signedPath = $targetSignedPath;
-            try {
-                $stmtUpd = $pdo->prepare("UPDATE documents SET signed_file_path = :path WHERE id = :id");
-                $stmtUpd->execute([':path' => $targetSignedPath, ':id' => $docId]);
-            } catch (\Throwable $e) {}
-        }
-    }
-
-    if (!empty($signedPath) && file_exists($signedPath)) {
-        $targetFile = $signedPath;
-    }
+    $targetFile = OneSignPdfEngine::resolveSignedDocumentPath($doc, $pdo);
 }
 
 // Jika belum disetujui atau file bertanda tangan belum ada, tampilkan naskah asli

@@ -173,8 +173,7 @@ if (!empty($token) && preg_match('/^[a-f0-9]{32}$/', $token)) {
                     <div class="font-label-sm text-label-sm text-secondary">Waktu Penandatanganan</div>
                     <div class="font-body-md text-on-surface">
                         <?php 
-                            $dt = new DateTime($verifyData['signed_at'], new DateTimeZone('UTC'));
-                            $dt->setTimezone(new DateTimeZone('Asia/Jakarta'));
+                            $dt = new DateTime($verifyData['signed_at']);
                             echo $dt->format('d F Y, H:i:s') . ' WIB';
                         ?>
                     </div>

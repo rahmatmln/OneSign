@@ -407,6 +407,73 @@ class OneSignPdfEngine extends Fpdi {
     }
 
     /**
+     * Memastikan berkas PDF bertanda tangan sah tersedia pada disk
+     * Jika berkas fisik hilang atau rusak, otomatis menghasilkan ulang stempel tanda tangan dan QR Code
+     */
+    public static function resolveSignedDocumentPath(array $doc, ?\PDO $pdo = null): string {
+        $signedPath = $doc['signed_file_path'] ?? '';
+        $safeSignedName = 'SIGNED_' . basename($doc['file_path']);
+        $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
+
+        $isSignedValid = false;
+        if (!empty($signedPath) && file_exists($signedPath) && filesize($signedPath) > 0) {
+            try {
+                $tester = new self('P', 'pt');
+                $tester->setSourceFile($signedPath);
+                $isSignedValid = true;
+            } catch (\Throwable $e) {
+                $isSignedValid = false;
+            }
+        }
+
+        if (!$isSignedValid && !empty($doc['signature_image_path']) && file_exists($doc['signature_image_path'])) {
+            $qrFilePath = '';
+            if (!empty($doc['verify_token'])) {
+                $verifyUrl = BASE_URL . '/views/verify.php?token=' . $doc['verify_token'];
+                $qrFileName = 'QR_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.png';
+                $qrFilePath = DIR_UPLOADS_SIGNATURES . $qrFileName;
+                self::generateQrCode($verifyUrl, $qrFilePath);
+            }
+
+            $signedDateFormatted = !empty($doc['signed_at']) ? date('d/m/Y', strtotime($doc['signed_at'])) : date('d/m/Y');
+            $stamped = self::stampSignature(
+                $doc['file_path'],
+                $targetSignedPath,
+                (int)$doc['page_number'],
+                $doc['signature_image_path'],
+                (float)$doc['pos_x'],
+                (float)$doc['pos_y'],
+                (float)$doc['box_width'],
+                (float)$doc['box_height'],
+                $doc['signer_name'] ?? '',
+                $doc['signer_nip'] ?? '',
+                $signedDateFormatted,
+                $qrFilePath
+            );
+
+            if (!empty($qrFilePath) && file_exists($qrFilePath)) {
+                unlink($qrFilePath);
+            }
+
+            if ($stamped) {
+                $signedPath = $targetSignedPath;
+                if ($pdo) {
+                    try {
+                        $stmtUpd = $pdo->prepare("UPDATE documents SET signed_file_path = :path WHERE id = :id");
+                        $stmtUpd->execute([':path' => $targetSignedPath, ':id' => $doc['id']]);
+                    } catch (\Throwable $e) {}
+                }
+            }
+        }
+
+        if (!empty($signedPath) && file_exists($signedPath)) {
+            return $signedPath;
+        }
+
+        return $doc['file_path'] ?? '';
+    }
+
+    /**
      * Mengalirkan berkas PDF bersih resmi ke peramban tanpa watermark diagonal
      */
     public static function streamWithDynamicWatermark(

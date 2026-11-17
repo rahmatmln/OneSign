@@ -38,7 +38,6 @@ $csrfToken = generateCsrfToken();
     <title>Masuk - OneSign</title>
     
     <!-- Google Fonts & Material Symbols (Stitch Design System) -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
     <link href="https://fonts.googleapis.com" rel="preconnect">
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -164,7 +163,6 @@ $csrfToken = generateCsrfToken();
     <!-- Unified Login Card (SAMA PERSIS DENGAN DESAIN STITCH) -->
     <div class="w-full max-w-md bg-surface-container-lowest rounded-xl shadow-xl p-space-lg flex flex-col gap-space-lg border border-surface-container -translate-y-4">
         
-        <!-- Header & Logo -->
         <div class="flex flex-col items-center text-center gap-space-xs">
             <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">
                 OneSign
@@ -174,7 +172,6 @@ $csrfToken = generateCsrfToken();
             </p>
         </div>
 
-        <!-- Alert Notifikasi Hasil Aksi / Error -->
         <?php if ($errorMessage): ?>
             <div class="p-3 bg-error-container text-on-error-container text-xs rounded-lg flex items-center gap-2">
                 <span class="material-symbols-outlined text-[18px]">error</span>
@@ -189,11 +186,9 @@ $csrfToken = generateCsrfToken();
             </div>
         <?php endif; ?>
 
-        <!-- Login Form -->
         <form class="flex flex-col gap-space-md" id="loginForm" action="<?= BASE_URL ?>/actions/auth_action.php?action=login" method="POST">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
             
-            <!-- Email / NIP / NIM Input -->
             <div class="flex flex-col gap-1.5">
                 <label class="font-label-md text-label-md text-on-surface" for="identifier">Email Institusi / NIP / NIM</label>
                 <div class="relative flex items-center">
@@ -207,7 +202,6 @@ $csrfToken = generateCsrfToken();
                 </div>
             </div>
 
-            <!-- Password Input -->
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between items-center">
                     <label class="font-label-md text-label-md text-on-surface" for="password">Kata Sandi</label>
@@ -230,7 +224,6 @@ $csrfToken = generateCsrfToken();
                 </div>
             </div>
 
-            <!-- Submit Button -->
             <button class="w-full h-11 mt-1 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-label-md text-label-md shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.99]" 
                     id="submitBtn" 
                     type="submit">

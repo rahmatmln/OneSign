@@ -11,9 +11,7 @@ require_once __DIR__ . '/../helpers/auth_helper.php';
 
 $action = $_GET['action'] ?? '';
 
-// ==========================================
-// 1. PROSES LOGIN
-// ==========================================
+// Proses Login
 if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $email     = trim($_POST['email'] ?? '');
     $password  = $_POST['password'] ?? '';
@@ -92,9 +90,7 @@ if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ==========================================
-// 2. PROSES LOGOUT
-// ==========================================
+// Proses Logout
 if ($action === 'logout') {
     if (isAuthenticated()) {
         writeAuditLog('LOGOUT', null, 'Pengguna keluar dari sistem');

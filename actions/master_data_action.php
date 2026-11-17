@@ -186,5 +186,5 @@ try {
     }
 } catch (Exception $e) {
     error_log('Master data action error: ' . $e->getMessage());
-    respondOrRedirect(false, 'Terjadi kesalahan sistem saat memproses master data: ' . $e->getMessage(), $redirectUrl, 'kategori');
+    respondOrRedirect(false, 'Terjadi kesalahan sistem saat memproses master data. Silakan coba kembali.', $redirectUrl, 'kategori');
 }
