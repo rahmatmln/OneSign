@@ -275,15 +275,10 @@ require_once __DIR__ . '/../layouts/header.php';
                                         Disetujui
                                     </span>
                                 <?php elseif ($doc['sign_status'] === 'ditolak'): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-950 font-label-sm text-label-sm font-semibold whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[14px] text-rose-700">cancel</span>
-                                        Ditolak
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold bg-rose-100 text-rose-950 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                                        Ditolak / Revisi
                                     </span>
-                                    <?php if (!empty($doc['rejection_note'])): ?>
-                                        <div class="mt-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-lg font-body-sm text-body-sm text-rose-900 leading-tight">
-                                            <span class="font-semibold">Alasan:</span> "<?= htmlspecialchars($doc['rejection_note'], ENT_QUOTES, 'UTF-8') ?>"
-                                        </div>
-                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
 
@@ -312,10 +307,13 @@ require_once __DIR__ . '/../layouts/header.php';
                                             <span>Unduh</span>
                                         </a>
                                     <?php else: ?>
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary/60 bg-surface-container rounded-lg font-label-sm text-label-sm font-medium whitespace-nowrap" title="Berkas ditolak">
-                                            <span class="material-symbols-outlined text-[14px]">lock</span>
-                                            <span>Unduh</span>
-                                        </span>
+                                        <button type="button" 
+                                                onclick="openRejectionModal(<?= htmlspecialchars(json_encode($doc['title']), ENT_QUOTES, 'UTF-8') ?>, 'Anda (Penandatangan)', <?= htmlspecialchars(json_encode($doc['rejection_note'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)" 
+                                                class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200/80 font-label-sm text-label-sm font-semibold transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                                                title="Lihat Alasan Penolakan / Catatan Revisi">
+                                            <span class="material-symbols-outlined text-[16px] text-rose-700">info</span>
+                                            <span>Alasan</span>
+                                        </button>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -327,4 +325,7 @@ require_once __DIR__ . '/../layouts/header.php';
     <?php endif; ?>
 </div>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<?php 
+require_once __DIR__ . '/../layouts/rejection_modal.php';
+require_once __DIR__ . '/../layouts/footer.php'; 
+?>

@@ -18,7 +18,7 @@ $pdo = Database::getConnection();
 // Mengambil seluruh dokumen di sistem beserta data penandatangan & catatan penolakan
 $stmt = $pdo->query("
     SELECT 
-        d.id, d.title, d.category, d.confidentiality, d.original_filename, 
+        d.id, d.title, d.notes, d.category, d.confidentiality, d.original_filename, 
         d.file_size, d.status, d.created_at,
         u_req.full_name AS requester_name,
         u_req.identifier_number AS requester_nim,
@@ -181,6 +181,15 @@ require_once __DIR__ . '/../layouts/header.php';
                                         <?= round($doc['file_size'] / 1024, 1) ?> KB
                                     </span>
                                 </div>
+                                <?php if (!empty($doc['notes'])): ?>
+                                    <div class="mt-2 p-2 rounded-lg bg-surface-container-low border border-outline-variant/30 text-xs flex items-start gap-1.5 max-w-sm">
+                                        <span class="material-symbols-outlined text-[15px] text-primary shrink-0 mt-0.5">sticky_note_2</span>
+                                        <div class="min-w-0">
+                                            <span class="font-semibold text-primary block leading-tight">Catatan Pemohon:</span>
+                                            <p class="text-secondary leading-normal mt-0.5 break-words"><?= htmlspecialchars($doc['notes'], ENT_QUOTES, 'UTF-8') ?></p>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </td>
 
                             <!-- Pihak Berkas -->
@@ -245,15 +254,10 @@ require_once __DIR__ . '/../layouts/header.php';
                                         Disetujui
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-100 text-rose-950 font-label-sm text-label-sm font-semibold whitespace-nowrap">
-                                        <span class="material-symbols-outlined text-[14px] text-rose-700">cancel</span>
-                                        Ditolak
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold bg-rose-100 text-rose-950 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                                        Ditolak / Revisi
                                     </span>
-                                    <?php if (!empty($doc['rejection_note'])): ?>
-                                        <div class="mt-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 rounded-lg font-body-sm text-body-sm text-rose-900 leading-tight">
-                                            <span class="font-semibold">Alasan:</span> "<?= htmlspecialchars($doc['rejection_note'], ENT_QUOTES, 'UTF-8') ?>"
-                                        </div>
-                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
 
@@ -274,11 +278,19 @@ require_once __DIR__ . '/../layouts/header.php';
                                             <span class="material-symbols-outlined text-[16px]">download</span>
                                             <span>Unduh</span>
                                         </a>
-                                    <?php else: ?>
+                                    <?php elseif ($doc['status'] === 'menunggu'): ?>
                                         <span class="inline-flex items-center gap-1 px-2.5 py-1.5 text-secondary/60 bg-surface-container rounded-lg font-label-sm text-label-sm font-medium whitespace-nowrap" title="Berkas belum disahkan">
                                             <span class="material-symbols-outlined text-[14px]">lock</span>
                                             <span>Unduh</span>
                                         </span>
+                                    <?php else: ?>
+                                        <button type="button" 
+                                                onclick="openRejectionModal(<?= htmlspecialchars(json_encode($doc['title']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($doc['signer_name'] ?? 'Pejabat Penandatangan'), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($doc['rejection_note'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)" 
+                                                class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200/80 font-label-sm text-label-sm font-semibold transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                                                title="Lihat Alasan Penolakan / Catatan Revisi">
+                                            <span class="material-symbols-outlined text-[16px] text-rose-700">info</span>
+                                            <span>Alasan</span>
+                                        </button>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -290,4 +302,7 @@ require_once __DIR__ . '/../layouts/header.php';
     <?php endif; ?>
 </div>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<?php 
+require_once __DIR__ . '/../layouts/rejection_modal.php';
+require_once __DIR__ . '/../layouts/footer.php'; 
+?>
