@@ -57,59 +57,7 @@ if (!empty($token) && preg_match('/^[a-f0-9]{32}$/', $token)) {
         ::-webkit-scrollbar { display: none; }
     </style>
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "background": "#f8f9ff",
-                        "surface": "#f8f9ff",
-                        "outline-variant": "#c5c5d3",
-                        "surface-container-lowest": "#ffffff",
-                        "surface-container-low": "#eff4ff",
-                        "primary": "#00236f",
-                        "surface-container": "#e5eeff",
-                        "surface-container-highest": "#d3e4fe",
-                        "error": "#ba1a1a",
-                        "error-container": "#ffdad6",
-                        "outline": "#757682",
-                        "surface-container-high": "#dce9ff",
-                        "on-surface": "#0b1c30",
-                        "on-error-container": "#93000a",
-                        "secondary": "#565e74",
-                        "primary-container": "#1e3a8a",
-                        "on-primary": "#ffffff"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "fontFamily": {
-                        "headline-lg": ["Plus Jakarta Sans"],
-                        "headline-md": ["Plus Jakarta Sans"],
-                        "headline-sm": ["Plus Jakarta Sans"],
-                        "body-md": ["Plus Jakarta Sans"],
-                        "body-sm": ["Plus Jakarta Sans"],
-                        "label-md": ["Plus Jakarta Sans"],
-                        "label-sm": ["Plus Jakarta Sans"]
-                    },
-                    "fontSize": {
-                        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
-                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "label-md": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
-                        "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
-                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
-                        "headline-sm": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600"}],
-                        "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}]
-                    }
-                }
-            }
-        };
-    </script>
+    <?php require __DIR__ . '/layouts/tailwind_config.php'; ?>
 </head>
 <body class="bg-background font-body-md text-on-surface antialiased selection:bg-primary selection:text-on-primary">
 <main class="min-h-screen w-full flex flex-col items-center justify-center p-4">

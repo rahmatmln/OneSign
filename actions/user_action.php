@@ -26,11 +26,6 @@ $action = trim($_POST['action'] ?? '');
 $pdo = Database::getConnection();
 
 function respondOrRedirect(bool $success, string $message, string $redirectUrl): void {
-    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => $success, 'message' => $message]);
-        exit;
-    }
     if ($success) {
         $_SESSION['flash_success'] = $message;
     } else {

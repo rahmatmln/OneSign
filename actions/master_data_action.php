@@ -26,11 +26,6 @@ $action = trim($_POST['action'] ?? '');
 $pdo = Database::getConnection();
 
 function respondOrRedirect(bool $success, string $message, string $redirectUrl, string $tab = 'kategori'): void {
-    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => $success, 'message' => $message]);
-        exit;
-    }
     if ($success) {
         $_SESSION['flash_success'] = $message;
     } else {
@@ -154,30 +149,6 @@ try {
             writeAuditLog('TOGGLE_CATEGORY_STATUS', null, "Mengubah status kategori ID #{$categoryId} ({$category['name']}) menjadi {$statusText}");
 
             respondOrRedirect(true, "Kategori '{$category['name']}' berhasil {$statusText}.", $redirectUrl, 'kategori');
-            break;
-
-        case 'toggle_classification':
-            $classificationId = (int)($_POST['classification_id'] ?? 0);
-            if ($classificationId <= 0) {
-                respondOrRedirect(false, 'ID klasifikasi tidak valid.', $redirectUrl, 'klasifikasi');
-            }
-
-            $stmtFind = $pdo->prepare("SELECT name, is_active FROM document_classifications WHERE id = :id LIMIT 1");
-            $stmtFind->execute([':id' => $classificationId]);
-            $classItem = $stmtFind->fetch();
-
-            if (!$classItem) {
-                respondOrRedirect(false, 'Kebijakan klasifikasi tidak ditemukan.', $redirectUrl, 'klasifikasi');
-            }
-
-            $newStatus = ($classItem['is_active'] == 1) ? 0 : 1;
-            $stmtToggle = $pdo->prepare("UPDATE document_classifications SET is_active = :status WHERE id = :id");
-            $stmtToggle->execute([':status' => $newStatus, ':id' => $classificationId]);
-
-            $statusText = ($newStatus === 1) ? 'diaktifkan' : 'dinonaktifkan';
-            writeAuditLog('TOGGLE_CLASSIFICATION_STATUS', null, "Mengubah status klasifikasi ID #{$classificationId} ({$classItem['name']}) menjadi {$statusText}");
-
-            respondOrRedirect(true, "Kebijakan '{$classItem['name']}' berhasil {$statusText}.", $redirectUrl, 'klasifikasi');
             break;
 
         default:

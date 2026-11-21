@@ -13,8 +13,9 @@
 
     </div>
 
-    <!-- Protected In-Page PDF Preview Modal -->
-    <?php require_once __DIR__ . '/pdf_preview_modal.php'; ?>
+    <?php if (!empty($includePdfPreview)): ?>
+        <?php require_once __DIR__ . '/pdf_preview_modal.php'; ?>
+    <?php endif; ?>
 
 </body>
 </html>

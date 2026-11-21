@@ -286,7 +286,7 @@ require_once __DIR__ . '/../layouts/header.php';
                             <td class="py-3.5 px-space-md align-top text-right whitespace-nowrap">
                                 <div class="inline-flex items-center justify-end gap-1.5">
                                     <button type="button" 
-                                            onclick="openPdfPreview(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['title']), ENT_QUOTES, 'UTF-8') ?>')" 
+                                            onclick="openPdfPreview(<?= (int)$doc['id'] ?>, <?= htmlspecialchars(json_encode($doc['title']), ENT_QUOTES, 'UTF-8') ?>)" 
                                             class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-sm text-label-sm font-semibold rounded-lg border border-outline-variant/30 shadow-xs transition-all whitespace-nowrap cursor-pointer"
                                             title="Lihat Pratinjau Dokumen Langsung">
                                         <span class="material-symbols-outlined text-[16px]">visibility</span>
@@ -326,6 +326,7 @@ require_once __DIR__ . '/../layouts/header.php';
 </div>
 
 <?php 
+$includePdfPreview = true;
 require_once __DIR__ . '/../layouts/rejection_modal.php';
 require_once __DIR__ . '/../layouts/footer.php'; 
 ?>
