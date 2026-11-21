@@ -54,20 +54,24 @@ if ($doc['status'] !== 'disetujui') {
     die('Akses Dibatasi: Dokumen belum disahkan secara elektronik oleh dosen penandatangan.');
 }
 
-// 2. Penegakan Aturan Bisnis BR-04: Akses Dokumen 'Rahasia'
-if ($doc['confidentiality'] === 'rahasia') {
-    $isRequester = ($user['id'] === (int)$doc['requester_id']);
-    $isSigner    = ($user['id'] === (int)$doc['signer_id']);
+// Penegakan otorisasi: hanya dokumen publik yang boleh diunduh bebas; internal/rahasia khusus pihak terkait dan admin
+if ($doc['confidentiality'] !== 'publik') {
+    $isRequester = ((int)$user['id'] === (int)$doc['requester_id']);
+    $isSigner    = ((int)$user['id'] === (int)$doc['signer_id']);
     $isAdmin     = ($user['role'] === 'admin');
 
     if (!$isRequester && !$isSigner && !$isAdmin) {
         http_response_code(403);
-        die('Akses Ditolak: Dokumen berstatus RAHASIA hanya dapat diunduh oleh Pemohon, Penandatangan, dan Staf Administrasi yang sah.');
+        die('Akses Ditolak: Anda tidak memiliki wewenang untuk mengunduh berkas ini.');
     }
 }
 
-// Pastikan Berkas Fisik Hasil Stempel TTD Siap
+// Pastikan berkas fisik hasil stempel TTD siap sebelum diunduh
 $signedPath = OneSignPdfEngine::resolveSignedDocumentPath($doc, $pdo);
+if (empty($signedPath) || !file_exists($signedPath)) {
+    http_response_code(500);
+    die('Berkas bertanda tangan tidak tersedia. Hubungi administrator.');
+}
 
 // 4. Catat Peristiwa Pengunduhan ke Audit Trail (FR-06)
 writeAuditLog('DOWNLOAD_DOC', $docId, 'Mengunduh berkas. Identitas: ' . $user['full_name'] . ' (' . $user['role'] . ')');

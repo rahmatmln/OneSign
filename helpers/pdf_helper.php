@@ -96,30 +96,10 @@ class OneSignPdfEngine extends Fpdi {
         parent::_putresources();
     }
 
-    public function RotatedText(int|float $x, int|float $y, string $txt, int $angle): void {
-        $this->Rotate($angle, $x, $y);
-        $this->Text($x, $y, $txt);
-        $this->Rotate(0);
-    }
-
     public function _beginpage($orientation, $size, $rotation): void {
         parent::_beginpage($orientation, $size, $rotation);
         if ($this->angle != 0) {
             $this->Rotate($this->angle);
-        }
-    }
-
-    public function RotatePage(int $angle, int|float $x = -1, int|float $y = -1): void {
-        if ($x == -1) $x = $this->x;
-        if ($y == -1) $y = $this->y;
-        $this->angle = $angle;
-        if ($angle != 0) {
-            $rad = $angle * M_PI / 180;
-            $c   = cos($rad);
-            $s   = sin($rad);
-            $cx  = $x * $this->k;
-            $cy  = ($this->h - $y) * $this->k;
-            $this->_out(sprintf('q %.5F %.5F %.5F %.5F %.2F %.2F cm 1 0 0 1 %.2F %.2F cm', $c, $s, -$s, $c, $cx, $cy, -$cx, -$cy));
         }
     }
 
@@ -213,6 +193,7 @@ class OneSignPdfEngine extends Fpdi {
             $pdf = new self('P', 'pt'); // Satuan Points (72 DPI) sesuai PDF.js
             $pdf->SetAutoPageBreak(false); // Cegah FPDF membuat halaman baru otomatis saat stempel di dekat batas bawah
             $pageCount = $pdf->setSourceFile($cleanSource);
+            $targetPage = max(1, min($targetPage, $pageCount));
 
             for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
                 $tplId = $pdf->importPage($pageNum);
@@ -411,9 +392,12 @@ class OneSignPdfEngine extends Fpdi {
      * Jika berkas fisik hilang atau rusak, otomatis menghasilkan ulang stempel tanda tangan dan QR Code
      */
     public static function resolveSignedDocumentPath(array $doc, ?\PDO $pdo = null): string {
-        $signedPath = $doc['signed_file_path'] ?? '';
-        $safeSignedName = 'SIGNED_' . basename($doc['file_path']);
-        $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
+        $origPath = resolveUploadPath(DIR_UPLOADS_ORIGINAL, $doc['file_path'] ?? '');
+        $signedPath = resolveUploadPath(DIR_UPLOADS_SIGNED, $doc['signed_file_path'] ?? '');
+        $sigPath = resolveUploadPath(DIR_UPLOADS_SIGNATURES, $doc['signature_image_path'] ?? '');
+
+        $safeSignedName = !empty($origPath) ? 'SIGNED_' . basename($origPath) : '';
+        $targetSignedPath = !empty($safeSignedName) ? DIR_UPLOADS_SIGNED . $safeSignedName : '';
 
         $isSignedValid = false;
         if (!empty($signedPath) && file_exists($signedPath) && filesize($signedPath) > 0) {
@@ -426,7 +410,7 @@ class OneSignPdfEngine extends Fpdi {
             }
         }
 
-        if (!$isSignedValid && !empty($doc['signature_image_path']) && file_exists($doc['signature_image_path'])) {
+        if (!$isSignedValid && !empty($origPath) && file_exists($origPath) && !empty($sigPath) && file_exists($sigPath)) {
             $qrFilePath = '';
             if (!empty($doc['verify_token'])) {
                 $verifyUrl = BASE_URL . '/views/verify.php?token=' . $doc['verify_token'];
@@ -437,10 +421,10 @@ class OneSignPdfEngine extends Fpdi {
 
             $signedDateFormatted = !empty($doc['signed_at']) ? date('d/m/Y', strtotime($doc['signed_at'])) : date('d/m/Y');
             $stamped = self::stampSignature(
-                $doc['file_path'],
+                $origPath,
                 $targetSignedPath,
                 (int)$doc['page_number'],
-                $doc['signature_image_path'],
+                $sigPath,
                 (float)$doc['pos_x'],
                 (float)$doc['pos_y'],
                 (float)$doc['box_width'],
@@ -460,7 +444,7 @@ class OneSignPdfEngine extends Fpdi {
                 if ($pdo) {
                     try {
                         $stmtUpd = $pdo->prepare("UPDATE documents SET signed_file_path = :path WHERE id = :id");
-                        $stmtUpd->execute([':path' => $targetSignedPath, ':id' => $doc['id']]);
+                        $stmtUpd->execute([':path' => $safeSignedName, ':id' => $doc['id']]);
                     } catch (\Throwable $e) {}
                 }
             }
@@ -470,31 +454,6 @@ class OneSignPdfEngine extends Fpdi {
             return $signedPath;
         }
 
-        return $doc['file_path'] ?? '';
-    }
-
-    /**
-     * Mengalirkan berkas PDF bersih resmi ke peramban tanpa watermark diagonal
-     */
-    public static function streamWithDynamicWatermark(
-        string $pdfPath,
-        array $userData,
-        array $docData,
-        string $downloadFilename
-    ): void {
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $downloadFilename . '"');
-        if (file_exists($pdfPath)) {
-            header('Content-Length: ' . filesize($pdfPath));
-        }
-        header('Cache-Control: private, max-age=0, must-revalidate');
-        header('Pragma: public');
-
-        readfile($pdfPath);
-        exit;
+        return '';
     }
 }

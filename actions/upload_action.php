@@ -147,7 +147,7 @@ try {
         ':category'           => $category,
         ':confidentiality'    => $confidentiality,
         ':original_filename'  => $originalName,
-        ':file_path'          => $targetPath,
+        ':file_path'          => $storedFileName,
         ':file_size'          => $fileSize
     ]);
     $docId = (int)$pdo->lastInsertId();
@@ -165,20 +165,6 @@ try {
         ':pos_y'       => $posY,
         ':box_width'   => $boxWidth,
         ':box_height'  => $boxHeight
-    ]);
-
-    // Kirim notifikasi in-app ke penandatangan
-    $stmtNotif = $pdo->prepare("
-        INSERT INTO notifications (user_id, document_id, title, message, is_read)
-        VALUES (:user_id, :document_id, :title, :message, 0)
-    ");
-    $notifTitle   = 'Permohonan Pengesahan Dokumen Baru';
-    $notifMessage = $user['full_name'] . ' mengajukan permohonan tanda tangan untuk berkas: "' . $title . '".';
-    $stmtNotif->execute([
-        ':user_id'     => $signerId,
-        ':document_id' => $docId,
-        ':title'       => $notifTitle,
-        ':message'     => $notifMessage
     ]);
 
     $pdo->commit();

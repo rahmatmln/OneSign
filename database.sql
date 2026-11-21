@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     requester_id INT NOT NULL,
     title VARCHAR(200) NOT NULL,
+    notes TEXT NULL,
     category VARCHAR(100) NOT NULL,
     confidentiality ENUM('publik', 'internal', 'rahasia') NOT NULL DEFAULT 'internal',
     original_filename VARCHAR(255) NOT NULL,
@@ -135,3 +136,32 @@ VALUES
 -- Akun Staf Administrasi / Arsip
 ('Rini Maharani, A.Md', 'rini.maharani@pnj.ac.id', '$2y$10$7RFM5CbuvKDHLydvKv/yeOAEuSHlZWwKarpiCUo/D8/J40hskRIgO', 'admin', '199208102018032001', 'Tata Usaha TIK')
 ON DUPLICATE KEY UPDATE full_name = VALUES(full_name);
+
+-- Seed Data Klasifikasi Dokumen
+INSERT INTO document_classifications (name, code, badge_label, description, verification_level, tier_code, tier_level, is_active)
+VALUES
+('Publik Terbuka', 'publik', 'Bebas Akses', 'Dokumen pengumuman, SK umum, atau brosur yang dapat diverifikasi publik tanpa otentikasi login portal akademis.', 'Level Verifikasi: QR Code Terbuka', 'TIER-0', 0, 1),
+('Internal Kampus', 'internal', 'Khusus Sivitas', 'Hanya dapat diunduh dan dilihat oleh akun mahasiswa, dosen, atau tenaga kependidikan aktif institusi via SSO.', 'Level Verifikasi: SSO Edu-ID Required', 'TIER-1', 1, 1),
+('Rahasia Terbatas', 'rahasia', 'Restricted', 'Transkrip nilai, data pribadi, atau evaluasi akademik yang memerlukan otorisasi peran berwenang dan izin akses temporer.', 'Level Verifikasi: Dual-Factor Auth + Watermark', 'TIER-2', 2, 1)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    badge_label = VALUES(badge_label),
+    description = VALUES(description),
+    verification_level = VALUES(verification_level),
+    tier_code = VALUES(tier_code),
+    tier_level = VALUES(tier_level);
+
+-- Seed Data Kategori Dokumen
+INSERT INTO document_categories (name, code, description, default_classification, icon_name, is_active)
+VALUES
+('Tugas Akhir / Skripsi', 'SK-THESIS-FINAL', 'Naskah final kelulusan sarjana & pascasarjana berserta lembar pengesahan dewan penguji', 'internal', 'school', 1),
+('Surat Rekomendasi Magang & MBKM', 'SR-MBKM-DIR', 'Rekomendasi resmi magang mandiri & industri kementerian bertandatangan dekanat', 'publik', 'assignment_turned_in', 1),
+('Lembar Pengesahan Laporan', 'LP-LAP-PRAK', 'Pengesahan laporan praktikum laboratorium dan proyek akhir semester mahasiswa', 'internal', 'verified', 1),
+('Nota Dinas Dekanat', 'ND-DEK-TIK', 'Surat dinas internal kedinasan antar pimpinan departemen dan program studi', 'rahasia', 'gavel', 1),
+('Berita Acara Sidang', 'BA-SID-KOMP', 'Berita acara resmi pelaksanaan sidang proposal dan sidang komprehensif kelulusan akhir', 'rahasia', 'fact_check', 1),
+('Administrasi Akademik Lainnya', 'ADM-AKAD-GEN', 'Dokumen pengajuan berkas administrasi umum dan pengantar perkuliahan', 'internal', 'description', 1)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    description = VALUES(description),
+    default_classification = VALUES(default_classification),
+    icon_name = VALUES(icon_name);

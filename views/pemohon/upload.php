@@ -543,7 +543,8 @@ require_once __DIR__ . '/../layouts/header.php';
         if (input.files && input.files[0]) {
             const file = input.files[0];
 
-            if (file.type !== 'application/pdf') {
+            const isPdfFile = file.type === 'application/pdf' || (file.type === '' && file.name.toLowerCase().endsWith('.pdf'));
+            if (!isPdfFile) {
                 alert('Peringatan: Berkas yang dipilih harus berupa file PDF (.pdf).');
                 input.value = '';
                 fileInfo.classList.add('hidden');

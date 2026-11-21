@@ -4,9 +4,13 @@
  * Politeknik Negeri Jakarta - Jurusan TIK
  */
 
-// Jika dijalankan via PHP Built-in Server sebagai router, sajikan file langsung jika ada
+// Router PHP built-in server: blokir direktori unggahan dan berkas sensitif sebelum menyajikan file statis
 if (php_sapi_name() === 'cli-server') {
-    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
+    if (preg_match('#^/(uploads/|\.)|\.(sql|md|txt|json|lock|htaccess)$#i', $path)) {
+        http_response_code(403);
+        exit('Akses ditolak.');
+    }
     if ($path !== '/' && file_exists(__DIR__ . $path) && !is_dir(__DIR__ . $path)) {
         return false;
     }

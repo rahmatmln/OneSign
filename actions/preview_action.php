@@ -49,28 +49,27 @@ if (!$doc) {
     die('Dokumen tidak ditemukan dalam repositori.');
 }
 
-// Penegakan Aturan Bisnis BR-04: Akses Dokumen 'Rahasia'
-if ($doc['confidentiality'] === 'rahasia') {
-    $isRequester = ($user['id'] === (int)$doc['requester_id']);
-    $isSigner    = ($user['id'] === (int)$doc['signer_id']);
+// Batasi akses dokumen non-publik atau draf belum sah hanya untuk pemohon, penandatangan, dan admin
+if ($doc['status'] !== 'disetujui' || $doc['confidentiality'] !== 'publik') {
+    $isRequester = ((int)$user['id'] === (int)$doc['requester_id']);
+    $isSigner    = ((int)$user['id'] === (int)$doc['signer_id']);
     $isAdmin     = ($user['role'] === 'admin');
 
     if (!$isRequester && !$isSigner && !$isAdmin) {
         http_response_code(403);
-        die('Akses Ditolak: Dokumen berstatus RAHASIA hanya dapat dilihat oleh Pemohon, Penandatangan, dan Staf Administrasi yang sah.');
+        die('Akses Ditolak: Anda tidak memiliki wewenang untuk melihat pratinjau berkas ini.');
     }
 }
 
-// Menentukan berkas target untuk ditampilkan
 $targetFile = null;
 
 if ($doc['status'] === 'disetujui') {
     $targetFile = OneSignPdfEngine::resolveSignedDocumentPath($doc, $pdo);
 }
 
-// Jika belum disetujui atau file bertanda tangan belum ada, tampilkan naskah asli
-if (empty($targetFile) && !empty($doc['file_path']) && file_exists($doc['file_path'])) {
-    $targetFile = $doc['file_path'];
+$origPath = resolveUploadPath(DIR_UPLOADS_ORIGINAL, $doc['file_path']);
+if (empty($targetFile) && !empty($origPath) && file_exists($origPath)) {
+    $targetFile = $origPath;
 }
 
 if (empty($targetFile) || !file_exists($targetFile)) {

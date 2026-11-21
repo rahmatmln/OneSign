@@ -72,15 +72,14 @@ if ($action === 'approve') {
         die('Goresan tanda tangan tidak ditemukan. Harap goreskan TTD pada kanvas.');
     }
 
-    // Dekode Citra Base64 PNG
-    if (preg_match('/^data:image\/(\w+);base64,/', $sigData, $type)) {
-        $data = substr($sigData, strpos($sigData, ',') + 1);
-        $data = base64_decode($data);
-        if ($data === false) {
-            die('Format data tanda tangan tidak valid.');
-        }
-    } else {
-        die('Format citra tanda tangan tidak didukung.');
+    // Validasi ketat citra PNG base64 (format, batas ukuran 512 KB, dan magic bytes PNG)
+    if (!preg_match('/^data:image\/png;base64,/', $sigData)) {
+        die('Format citra tanda tangan tidak didukung. Gunakan format PNG.');
+    }
+    $rawBase64 = substr($sigData, strpos($sigData, ',') + 1);
+    $data = base64_decode($rawBase64, true);
+    if ($data === false || strlen($data) === 0 || strlen($data) > 512 * 1024 || strncmp($data, "\x89PNG\r\n\x1a\n", 8) !== 0) {
+        die('Format data tanda tangan tidak valid atau melebihi batas ukuran.');
     }
 
     // Simpan Citra PNG Tanda Tangan ke Direktori uploads/signatures/
@@ -108,7 +107,6 @@ if ($action === 'approve') {
     try {
         $pdo->beginTransaction();
 
-        // 1. Perbarui data document_signers dengan status disetujui, token, dan IP
         $stmtUpdateSigner = $pdo->prepare("
             UPDATE document_signers 
             SET signature_type = 'canvas',
@@ -120,18 +118,23 @@ if ($action === 'approve') {
             WHERE id = :signer_entry_id
         ");
         $stmtUpdateSigner->execute([
-            ':sig_path'        => $sigFilePath,
+            ':sig_path'        => $sigFileName,
             ':verify_token'    => $verifyToken,
             ':signer_ip'       => $signerIp,
             ':signer_entry_id' => $docData['signer_entry_id']
         ]);
 
-        // 2. Lakukan injeksi tanda tangan fisik & QR code ke berkas PDF
-        $safeSignedName   = 'SIGNED_' . basename($docData['file_path']);
+        // Injeksi tanda tangan fisik & QR code ke berkas PDF
+        $sourceFilePath = resolveUploadPath(DIR_UPLOADS_ORIGINAL, $docData['file_path']);
+        if (empty($sourceFilePath) || !file_exists($sourceFilePath)) {
+            throw new RuntimeException('Berkas PDF sumber tidak ditemukan di server.');
+        }
+
+        $safeSignedName   = 'SIGNED_' . basename($sourceFilePath);
         $targetSignedPath = DIR_UPLOADS_SIGNED . $safeSignedName;
 
-        OneSignPdfEngine::stampSignature(
-            $docData['file_path'],
+        $stamped = OneSignPdfEngine::stampSignature(
+            $sourceFilePath,
             $targetSignedPath,
             $pageNum,
             $sigFilePath,
@@ -144,8 +147,10 @@ if ($action === 'approve') {
             date('d/m/Y'),
             $qrFilePath
         );
+        if (!$stamped || !file_exists($targetSignedPath) || filesize($targetSignedPath) === 0) {
+            throw new RuntimeException('Gagal menempelkan tanda tangan dan QR code pada berkas PDF.');
+        }
 
-        // 3. Perbarui status master dokumen dan path signed PDF
         $stmtUpdateDoc = $pdo->prepare("
             UPDATE documents 
             SET status = 'disetujui',
@@ -153,20 +158,8 @@ if ($action === 'approve') {
             WHERE id = :doc_id
         ");
         $stmtUpdateDoc->execute([
-            ':signed_path' => $targetSignedPath,
+            ':signed_path' => $safeSignedName,
             ':doc_id'      => $docId
-        ]);
-
-        // 4. Kirim notifikasi in-app kepada mahasiswa pemohon
-        $stmtNotif = $pdo->prepare("
-            INSERT INTO notifications (user_id, document_id, title, message, is_read)
-            VALUES (:user_id, :doc_id, :title, :message, 0)
-        ");
-        $stmtNotif->execute([
-            ':user_id' => $docData['requester_id'],
-            ':doc_id'  => $docId,
-            ':title'   => 'Dokumen Berhasil Disahkan',
-            ':message' => 'Dokumen "' . $docData['title'] . '" telah disetujui dan ditandatangani oleh ' . $user['full_name'] . '.'
         ]);
 
         $pdo->commit();
@@ -224,21 +217,8 @@ if ($action === 'reject') {
             ':signer_entry_id' => $docData['signer_entry_id']
         ]);
 
-        // 2. Perbarui status dokumen menjadi 'ditolak'
         $stmtRejectDoc = $pdo->prepare("UPDATE documents SET status = 'ditolak' WHERE id = :doc_id");
         $stmtRejectDoc->execute([':doc_id' => $docId]);
-
-        // 3. Kirim notifikasi in-app kepada mahasiswa pemohon
-        $stmtNotif = $pdo->prepare("
-            INSERT INTO notifications (user_id, document_id, title, message, is_read)
-            VALUES (:user_id, :doc_id, :title, :message, 0)
-        ");
-        $stmtNotif->execute([
-            ':user_id' => $docData['requester_id'],
-            ':doc_id'  => $docId,
-            ':title'   => 'Permohonan Dokumen Ditolak',
-            ':message' => 'Dokumen "' . $docData['title'] . '" ditolak oleh ' . $user['full_name'] . '. Catatan: "' . $rejectionNote . '".'
-        ]);
 
         $pdo->commit();
 

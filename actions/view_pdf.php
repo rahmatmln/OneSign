@@ -41,8 +41,8 @@ if (!$doc) {
 }
 
 // Otorisasi Akses: Hanya Pemohon, Penandatangan dokumen bersangkutan, atau Admin yang boleh membuka
-$isRequester = ($user['id'] === (int)$doc['requester_id']);
-$isSigner    = ($user['id'] === (int)$doc['signer_id']);
+$isRequester = ((int)$user['id'] === (int)$doc['requester_id']);
+$isSigner    = ((int)$user['id'] === (int)$doc['signer_id']);
 $isAdmin     = ($user['role'] === 'admin');
 
 if (!$isRequester && !$isSigner && !$isAdmin) {
@@ -50,8 +50,8 @@ if (!$isRequester && !$isSigner && !$isAdmin) {
     die('Akses Ditolak: Anda tidak memiliki wewenang untuk melihat berkas ini.');
 }
 
-$filePath = $doc['file_path'];
-if (!file_exists($filePath)) {
+$filePath = resolveUploadPath(DIR_UPLOADS_ORIGINAL, $doc['file_path']);
+if (empty($filePath) || !file_exists($filePath)) {
     http_response_code(404);
     die('Berkas fisik PDF tidak ditemukan pada server.');
 }

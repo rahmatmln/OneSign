@@ -22,13 +22,20 @@ $endDate        = trim($_GET['end_date'] ?? '');
 
 // Pemetaan label peristiwa (action) dan skema warnanya sesuai Stitch Tokens
 $actionMeta = [
-    'SIGN_DOC'     => ['label' => 'Tanda Tangan TTE',    'icon' => 'draw',           'class' => 'bg-emerald-100 text-emerald-950 font-semibold'],
-    'UPLOAD_DOC'   => ['label' => 'Unggah Berkas',       'icon' => 'upload_file',    'class' => 'bg-secondary-container text-on-secondary-container font-semibold'],
-    'DOWNLOAD_DOC' => ['label' => 'Unduh Berkas',        'icon' => 'download',       'class' => 'bg-purple-100 text-purple-950 font-semibold'],
-    'REJECT_DOC'   => ['label' => 'Penolakan Berkas',    'icon' => 'rule',           'class' => 'bg-rose-100 text-rose-950 font-semibold'],
-    'PREVIEW_DOC'  => ['label' => 'Pratinjau Dokumen',   'icon' => 'visibility',     'class' => 'bg-cyan-100 text-cyan-950 font-semibold'],
-    'LOGIN'        => ['label' => 'Autentikasi Masuk',   'icon' => 'login',          'class' => 'bg-blue-100 text-blue-950 font-semibold'],
-    'LOGOUT'       => ['label' => 'Sesi Keluar',         'icon' => 'logout',         'class' => 'bg-surface-container text-secondary font-semibold'],
+    'SIGN_DOC'               => ['label' => 'Tanda Tangan TTE',    'icon' => 'draw',              'class' => 'bg-emerald-100 text-emerald-950 font-semibold'],
+    'UPLOAD_DOC'             => ['label' => 'Unggah Berkas',       'icon' => 'upload_file',       'class' => 'bg-secondary-container text-on-secondary-container font-semibold'],
+    'DOWNLOAD_DOC'           => ['label' => 'Unduh Berkas',        'icon' => 'download',          'class' => 'bg-purple-100 text-purple-950 font-semibold'],
+    'REJECT_DOC'             => ['label' => 'Penolakan Berkas',    'icon' => 'rule',              'class' => 'bg-rose-100 text-rose-950 font-semibold'],
+    'PREVIEW_DOC'            => ['label' => 'Pratinjau Dokumen',   'icon' => 'visibility',        'class' => 'bg-cyan-100 text-cyan-950 font-semibold'],
+    'LOGIN'                  => ['label' => 'Autentikasi Masuk',   'icon' => 'login',             'class' => 'bg-blue-100 text-blue-950 font-semibold'],
+    'LOGOUT'                 => ['label' => 'Sesi Keluar',         'icon' => 'logout',            'class' => 'bg-surface-container text-secondary font-semibold'],
+    'CREATE_USER'            => ['label' => 'Tambah Pengguna',     'icon' => 'person_add',        'class' => 'bg-blue-100 text-blue-950 font-semibold'],
+    'UPDATE_USER'            => ['label' => 'Ubah Pengguna',       'icon' => 'manage_accounts',   'class' => 'bg-secondary-container text-on-secondary-container font-semibold'],
+    'TOGGLE_USER_STATUS'     => ['label' => 'Status Pengguna',     'icon' => 'power_settings_new','class' => 'bg-amber-100 text-amber-950 font-semibold'],
+    'RESET_PASSWORD'         => ['label' => 'Reset Kata Sandi',    'icon' => 'lock_reset',        'class' => 'bg-rose-100 text-rose-950 font-semibold'],
+    'CREATE_CATEGORY'        => ['label' => 'Tambah Kategori',     'icon' => 'create_new_folder', 'class' => 'bg-blue-100 text-blue-950 font-semibold'],
+    'UPDATE_CATEGORY'        => ['label' => 'Ubah Kategori',       'icon' => 'edit_note',         'class' => 'bg-secondary-container text-on-secondary-container font-semibold'],
+    'TOGGLE_CATEGORY_STATUS' => ['label' => 'Status Kategori',     'icon' => 'tune',              'class' => 'bg-amber-100 text-amber-950 font-semibold'],
 ];
 
 // Menghitung distribusi entri per aksi untuk pencacah dropdown
@@ -136,7 +143,6 @@ require_once __DIR__ . '/../layouts/header.php';
                 <span class="material-symbols-outlined text-[20px]">receipt_long</span>
             </div>
         </div>
-        <div class="mt-3 text-body-sm font-body-sm text-secondary">Log tersimpan secara permanen</div>
     </div>
 
     <!-- Metric 2: Dokumen Disahkan -->
@@ -150,7 +156,6 @@ require_once __DIR__ . '/../layouts/header.php';
                 <span class="material-symbols-outlined text-[20px]">draw</span>
             </div>
         </div>
-        <div class="mt-3 text-body-sm font-body-sm text-emerald-700 font-medium">Pengesahan TTE terverifikasi</div>
     </div>
 
     <!-- Metric 3: Unduh Berkas -->
@@ -164,7 +169,6 @@ require_once __DIR__ . '/../layouts/header.php';
                 <span class="material-symbols-outlined text-[20px]">file_download</span>
             </div>
         </div>
-        <div class="mt-3 text-body-sm font-body-sm text-secondary">Pengunduhan berkas bersertifikat</div>
     </div>
 
     <!-- Metric 4: Keamanan Forensik -->
@@ -177,10 +181,6 @@ require_once __DIR__ . '/../layouts/header.php';
             <div class="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700">
                 <span class="material-symbols-outlined text-[20px]">shield</span>
             </div>
-        </div>
-        <div class="mt-3 flex items-center gap-1.5 text-emerald-700 font-label-sm text-label-sm font-semibold">
-            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
-            <span>Jejak audit immutable (terkunci)</span>
         </div>
     </div>
 </div>

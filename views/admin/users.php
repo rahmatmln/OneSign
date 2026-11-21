@@ -305,7 +305,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                     </button>
 
                                     <!-- Reset Password -->
-                                    <form method="POST" action="<?= BASE_URL ?>/actions/user_action.php" class="inline" onsubmit="return confirm('Reset kata sandi akun <?= htmlspecialchars($u['full_name'], ENT_QUOTES, 'UTF-8') ?> ke default (password123)?');">
+                                    <form method="POST" action="<?= BASE_URL ?>/actions/user_action.php" class="inline" onsubmit="return confirm(<?= htmlspecialchars(json_encode('Reset kata sandi akun ' . $u['full_name'] . ' ke default (password123)?'), ENT_QUOTES, 'UTF-8') ?>);">
                                         <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
                                         <input type="hidden" name="action" value="reset_password">
                                         <input type="hidden" name="user_id" value="<?= $u['id'] ?>">

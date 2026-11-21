@@ -307,7 +307,7 @@ require_once __DIR__ . '/../layouts/header.php';
                             <td class="py-3 px-space-md text-right whitespace-nowrap">
                                 <div class="inline-flex items-center justify-end gap-1.5">
                                     <button type="button" 
-                                            onclick="openPdfPreview(<?= $doc['id'] ?>, '<?= htmlspecialchars(addslashes($doc['title']), ENT_QUOTES, 'UTF-8') ?>')" 
+                                            onclick="openPdfPreview(<?= (int)$doc['id'] ?>, <?= htmlspecialchars(json_encode($doc['title']), ENT_QUOTES, 'UTF-8') ?>)" 
                                             class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-label-sm text-label-sm font-semibold rounded-lg border border-outline-variant/30 shadow-xs transition-all whitespace-nowrap cursor-pointer"
                                             title="Lihat Pratinjau Dokumen Langsung">
                                         <span class="material-symbols-outlined text-[16px]">visibility</span>
@@ -355,45 +355,40 @@ require_once __DIR__ . '/../layouts/header.php';
 </div>
 
 <script>
-    // Tab filtering (All, Menunggu, Disetujui, Ditolak)
+    let currentStatusFilter = 'all';
+
+    function applyFilters() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.doc-row');
+        rows.forEach(row => {
+            const matchStatus = (currentStatusFilter === 'all' || row.dataset.status === currentStatusFilter);
+            const title = row.querySelector('.doc-title')?.innerText.toLowerCase() || '';
+            const category = row.querySelector('.doc-category')?.innerText.toLowerCase() || '';
+            const signer = row.querySelector('.doc-signer')?.innerText.toLowerCase() || '';
+            const matchSearch = (!query || title.includes(query) || category.includes(query) || signer.includes(query));
+
+            row.style.display = (matchStatus && matchSearch) ? '' : 'none';
+        });
+    }
+
     function filterDocs(status) {
-        // Reset active tab buttons
+        currentStatusFilter = status;
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.className = "tab-btn px-3 py-1.5 rounded-md font-label-sm text-label-sm font-semibold transition-all text-on-surface-variant hover:bg-surface-container";
             if (btn.dataset.tab === status) {
                 btn.className = "tab-btn active px-3 py-1.5 rounded-md font-label-sm text-label-sm font-semibold transition-all bg-primary text-on-primary shadow-sm";
             }
         });
-
-        const rows = document.querySelectorAll('.doc-row');
-        rows.forEach(row => {
-            if (status === 'all' || row.dataset.status === status) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
+        applyFilters();
     }
 
-    // Client-side search input filter
     function filterSearch() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('.doc-row');
-        rows.forEach(row => {
-            const title = row.querySelector('.doc-title')?.innerText.toLowerCase() || '';
-            const category = row.querySelector('.doc-category')?.innerText.toLowerCase() || '';
-            const signer = row.querySelector('.doc-signer')?.innerText.toLowerCase() || '';
-            
-            if (title.includes(query) || category.includes(query) || signer.includes(query)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
+        applyFilters();
     }
 </script>
 
 <?php 
+$includePdfPreview = true;
 require_once __DIR__ . '/../layouts/rejection_modal.php';
 require_once __DIR__ . '/../layouts/footer.php'; 
 ?>

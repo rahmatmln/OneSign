@@ -360,7 +360,15 @@
 
         if (e.key === 'Escape') {
             closePdfPreview();
-        } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+            return;
+        }
+
+        // Abaikan navigasi panah saat pengguna mengetik di kolom input halaman
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+            return;
+        }
+
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') {
             if (currentPdfDoc && currentPageNum < currentPdfDoc.numPages) {
                 currentPageNum++;
                 queueRender(currentPageNum);
